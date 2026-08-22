@@ -369,7 +369,7 @@ immediately rather than on Day 27.
 
 ## 13. Stack revision (2026-08-22)
 
-The原 design assumed Neon Postgres and a self-hosted worker. Revised to the
+The original design assumed Neon Postgres and a self-hosted worker. Revised to the
 Cloudflare stack:
 
 | Layer | Choice |
