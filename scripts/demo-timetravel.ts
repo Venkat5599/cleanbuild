@@ -45,11 +45,16 @@ import { fixedClock, matureDueExperiments } from '../packages/pipeline/src/learn
 import { MindsClient } from '../packages/mind/src/client.js';
 import { runFollowUp } from '../apps/api/src/followup.js';
 
-const log = pino({
-  transport: process.stdout.isTTY
-    ? { target: 'pino-pretty', options: { colorize: true, translateTime: 'HH:MM:ss' } }
-    : undefined,
-});
+// Built conditionally rather than passing `transport: undefined`, which
+// `exactOptionalPropertyTypes` correctly rejects.
+const logOptions: pino.LoggerOptions = {};
+if (process.stdout.isTTY) {
+  logOptions.transport = {
+    target: 'pino-pretty',
+    options: { colorize: true, translateTime: 'HH:MM:ss' },
+  };
+}
+const log = pino(logOptions);
 
 const deliver = process.argv.includes('--deliver');
 const db = await fromFile('.data/dev.db');
