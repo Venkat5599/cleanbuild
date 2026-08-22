@@ -20,8 +20,11 @@ import { listCreators } from '@ratchet/db';
 import {
   CRON_LOCK_KEY,
   CRON_LOCK_TTL_SECONDS,
+  MetricsStore,
   Observability,
+  authorizeMetrics,
   redisFromEnv,
+  tracerFromEnv,
   type AnalyticsEngineDataset,
 } from '@ratchet/observability';
 import { runFollowUp } from './followup.js';
@@ -41,6 +44,11 @@ export interface Env {
   UPSTASH_REDIS_REST_TOKEN?: string;
   /** Cloudflare Analytics Engine binding, optional. */
   ANALYTICS?: AnalyticsEngineDataset;
+  /** OTLP/HTTP trace collector. Any OTel-compatible backend. */
+  OTEL_EXPORTER_OTLP_ENDPOINT?: string;
+  OTEL_EXPORTER_OTLP_HEADERS?: string;
+  /** Bearer token required to scrape /metrics. */
+  METRICS_TOKEN?: string;
 }
 
 export interface RequestContext {
@@ -91,6 +99,22 @@ app.use('/rpc/*', async (c, next) => {
 });
 
 /**
+ * Prometheus scrape endpoint.
+ *
+ * Token-protected on purpose. An open /metrics tells an attacker how the system
+ * behaves and how often it fails, which is reconnaissance. Returns 404 rather
+ * than 401 when the token is wrong, so the endpoint's existence is not
+ * confirmed to an unauthorised caller.
+ */
+app.get('/metrics', async (c) => {
+  if (!authorizeMetrics(c.req.header('authorization') ?? null, c.env.METRICS_TOKEN)) {
+    return c.notFound();
+  }
+  const body = await new MetricsStore(redisFromEnv(c.env)).render();
+  return c.text(body, 200, { 'Content-Type': 'text/plain; version=0.0.4; charset=utf-8' });
+});
+
+/**
  * Manual trigger for the same job the cron runs.
  *
  * Exists so the demo can show the autonomous path on command rather than
@@ -123,7 +147,9 @@ export default {
       environment: env.ENVIRONMENT ?? 'production',
       analytics: env.ANALYTICS ?? null,
     });
-    obs.event('cron.start', { cron: event.cron });
+    const tracer = tracerFromEnv(env);
+    const metrics = new MetricsStore(redisFromEnv(env));
+    obs.event('cron.start', { cron: event.cron, traceId: tracer?.id ?? null });
 
     ctx.waitUntil(
       (async () => {
@@ -138,6 +164,7 @@ export default {
 
         if (!lock.acquired) {
           obs.event('cron.skipped', { reason: 'another invocation holds the lock' }, 'warn');
+          await metrics.increment('ratchet_cron_skipped_total');
           return;
         }
         if (lock.degraded) {
@@ -147,16 +174,43 @@ export default {
           obs.event('cron.lock_degraded', { key: lock.key }, 'warn');
         }
 
+        const startedAt = Date.now();
         try {
-          const report = await obs.span('cron.followup', () =>
-            runFollowUp({
-              db,
-              minds: mindsFor(env),
-              mindAlias: env.MINDS_ALIAS ?? null,
-              telegram: telegramFor(env),
-              log: (e, d) => obs.event(e, d as Record<string, string | number | boolean>),
-            }),
+          await metrics.increment('ratchet_cron_runs_total');
+          const runFollowUpTraced = () =>
+            tracer
+              ? tracer.span('followup', () =>
+                  runFollowUp({
+                    db,
+                    minds: mindsFor(env),
+                    mindAlias: env.MINDS_ALIAS ?? null,
+                    telegram: telegramFor(env),
+                    log: (e, d) => obs.event(e, d as Record<string, string | number | boolean>),
+                  }),
+                )
+              : runFollowUp({
+                  db,
+                  minds: mindsFor(env),
+                  mindAlias: env.MINDS_ALIAS ?? null,
+                  telegram: telegramFor(env),
+                  log: (e, d) => obs.event(e, d as Record<string, string | number | boolean>),
+                });
+
+          const report = await obs.span('cron.followup', runFollowUpTraced);
+
+          await metrics.increment('ratchet_experiments_closed_total', report.closed);
+          await metrics.increment('ratchet_experiments_voided_total', report.voided);
+          await metrics.increment('ratchet_notifications_sent_total', report.notificationsSent);
+          await metrics.increment(
+            'ratchet_notifications_suppressed_total',
+            report.notificationsSuppressed,
           );
+          await metrics.increment(
+            'ratchet_notifications_undelivered_total',
+            report.details.filter((d) => d.delivered === 'stored').length,
+          );
+          await metrics.setGauge('ratchet_followup_duration_ms', Date.now() - startedAt);
+
           obs.event('cron.followup.report', {
             matured: report.matured,
             closed: report.closed,
@@ -184,13 +238,19 @@ export default {
                 // not noise. Floating point alone stays near 1e-15.
                 refit.drift > 1e-6 ? 'warn' : 'info',
               );
+              await metrics.setGauge('ratchet_posterior_drift', refit.drift);
+              await metrics.setGauge('ratchet_closed_experiments', refit.nClosed);
             }
           }
         } catch (e) {
           obs.error('cron.failed', e, { cron: event.cron });
+          await metrics.increment('ratchet_cron_failures_total');
           throw e;
         } finally {
           await lock.release();
+          // Flushed last so the trace includes the whole run, and swallowed
+          // internally so a collector outage cannot fail the job.
+          await tracer?.flush();
         }
       })(),
     );

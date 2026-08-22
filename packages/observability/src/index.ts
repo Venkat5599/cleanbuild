@@ -160,3 +160,7 @@ function numericValues(fields: EventFields): number[] {
 export const nullObservability = new Observability({ service: 'test', environment: 'test' });
 
 export * from './lock.js';
+
+export * from './otel.js';
+
+export * from './metrics.js';

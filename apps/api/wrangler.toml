@@ -19,8 +19,18 @@ migrations_dir = "../../packages/db/migrations"
 [vars]
 ALLOWED_ORIGINS = "http://localhost:3000"
 
-# Secrets are set with `wrangler secret put`, never committed:
-#   MINDS_BUILDER_API_KEY
-#   MINDS_ALIAS
-#   TELEGRAM_BOT_TOKEN
+# Optional: Cloudflare Analytics Engine sink for structured events.
+# [[analytics_engine_datasets]]
+# binding = "ANALYTICS"
+# dataset = "ratchet_events"
+
+# Secrets are set with `wrangler secret put NAME`, never committed:
+#   MINDS_BUILDER_API_KEY        Builder API JWT from build.hellominds.ai
+#   MINDS_ALIAS                  conversation alias the worker messages
+#   TELEGRAM_BOT_TOKEN           fallback delivery channel
 #   TELEGRAM_CHAT_ID
+#   UPSTASH_REDIS_REST_URL       cron lock and metric counters
+#   UPSTASH_REDIS_REST_TOKEN
+#   OTEL_EXPORTER_OTLP_ENDPOINT  e.g. https://collector.example.com/v1/traces
+#   OTEL_EXPORTER_OTLP_HEADERS   e.g. "authorization=Bearer xxx"
+#   METRICS_TOKEN                bearer required to scrape /metrics
