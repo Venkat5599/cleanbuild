@@ -13,7 +13,7 @@ Legend: `[ ]` open · `[x]` done · `[~]` in progress · `[!]` blocked · **P0**
 - [ ] **P0** T-001 Create Minds agent, confirm a memory write survives a session boundary. Smallest possible test: write a fact, kill session, new session, read it back.
 - [ ] T-002 Register for a cognition boost (jam offers one per team).
 - [ ] **P0** T-003 Provision Neon project + branch `dev`. Save connection string to `.env`.
-- [ ] T-004 `bun init` monorepo, workspaces: `apps/web`, `apps/worker`, `packages/{core,mind,db,connectors}`.
+- [x] T-004 `bun init` monorepo, workspaces: `apps/web`, `apps/worker`, `packages/{core,mind,db,connectors}`.
 - [ ] T-005 Google Cloud project, enable YouTube Data API v3, OAuth consent screen, client id/secret.
 - [ ] T-006 Telegram bot via BotFather, save token + your chat id.
 - [ ] T-007 Git repo + initial commit. Public repo is a submission requirement.
@@ -41,13 +41,13 @@ Do not proceed until both are true.
 
 ## D2 — 23 Aug · Reward pipeline
 
-- [ ] **P0** T-200 `core/featurizer.ts`: 6 dimensions → one-hot `d=35` vector (PRD §8.1).
+- [x] **P0** T-200 `core/featurizer.ts`: 6 dimensions → one-hot `d=35` vector (PRD §8.1).
 - [ ] **P0** T-201 `mind.label(post)` — hook_type / thumbnail_archetype / topic_cluster. Write label to `features` AND to `canon` memory. Immutable per `schema_version`.
 - [ ] T-202 Topic clustering: k=8 per creator over title+description embeddings.
-- [ ] **P0** T-203 `core/baseline.ts`: weighted ridge, half-life 90d, returns `{coefs, sigmaResid, nTrain}`.
-- [ ] **P0** T-204 `core/reward.ts`: residual z-score with ±4σ clip.
+- [x] **P0** T-203 `core/baseline.ts`: weighted ridge, half-life 90d, returns `{coefs, sigmaResid, nTrain}`.
+- [x] **P0** T-204 `core/reward.ts`: residual z-score with ±4σ clip.
 - [ ] T-205 Experiment lifecycle: open on new post, checkpoints stamped at t+24/72/168h.
-- [ ] T-206 Unit tests for `core/baseline` + `core/reward` (pure, no I/O).
+- [x] T-206 Unit tests for `core/baseline` + `core/reward` (pure, no I/O).
 
 **Exit gate D2:** every seeded post has a reward; distribution is roughly mean 0, sd 1.
 If it is not, the baseline model is wrong — stop and fix before D3.
@@ -56,11 +56,11 @@ If it is not, the baseline model is wrong — stop and fix before D3.
 
 ## D3 — 24 Aug · The brain
 
-- [ ] **P0** T-300 `core/posterior.ts`: `initFromPrior`, `update` (Sherman–Morrison), `recompute` (Cholesky), `marginal`, `probPositive`.
-- [ ] **P0** T-301 Serialise `mu` / `Sigma` to `bytea`, round-trip test.
-- [ ] **P0** T-302 `core/thompson.ts`: `sampleTheta` (seeded RNG), `rank`, `predictiveVariance`.
-- [ ] **P0** T-303 **Recovery test** — run the posterior over seeded history, assert it recovers the planted signal from T-105 within tolerance. *This is the single most important test in the repo.*
-- [ ] T-304 Property tests: variance monotonically non-increasing; `tau2→0` stays at prior; clipping bounds single-experiment influence.
+- [x] **P0** T-300 `core/posterior.ts`: `initFromPrior`, `update` (Sherman–Morrison), `recompute` (Cholesky), `marginal`, `probPositive`.
+- [x] **P0** T-301 Serialise `mu` / `Sigma` to `bytea`, round-trip test.
+- [x] **P0** T-302 `core/thompson.ts`: `sampleTheta` (seeded RNG), `rank`, `predictiveVariance`.
+- [x] **P0** T-303 **Recovery test** — run the posterior over seeded history, assert it recovers the planted signal from T-105 within tolerance. *This is the single most important test in the repo.*
+- [x] T-304 Property tests: variance monotonically non-increasing; `tau2→0` stays at prior; clipping bounds single-experiment influence.
 - [ ] **P0** T-305 `mind.generateCandidates(ctx, k=8)` — briefs consistent with canon.
 - [ ] **P0** T-306 Act loop: ONE `theta_tilde` draw per decision round (not per candidate — this is the correctness bug that silently breaks Thompson sampling), rank, flag exploratory by `x'Σx > p75`.
 - [ ] **P0** T-307 `mind.decidePolicy` — exploration budget enforcement, rationale written to `decisions` memory.
@@ -90,7 +90,7 @@ Telegram message lands. **This is the submission.** Everything after is presenta
 
 ## D5 — 26 Aug · Surface
 
-- [ ] T-500 `core/pooling.ts` empirical Bayes + `jobs/pool.ts` nightly. *Cut #1 if behind → static niche prior JSON.*
+- [~] T-500 `core/pooling.ts` empirical Bayes + `jobs/pool.ts` nightly. *Cut #1 if behind → static niche prior JSON.*
 - [ ] T-501 Static fallback prior JSON for 12 niches (also the `n_creators < 3` path).
 - [ ] T-502 `posterior_snapshots` weekly writer.
 - [ ] **P0** T-503 Dashboard `/posterior`: marginal effects, credible intervals, sorted by effect size. Never point estimates.
