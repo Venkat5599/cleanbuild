@@ -20,16 +20,6 @@ export function fromD1(binding: D1Database): Db {
   return drizzleD1(binding, { schema });
 }
 
-/** Local path — bun:sqlite, imported lazily so Workers never load it. */
-export async function fromFile(path = '.data/dev.db'): Promise<Db> {
-  const { Database } = await import('bun:sqlite');
-  const { drizzle } = await import('drizzle-orm/bun-sqlite');
-  const sqlite = new Database(path, { create: true });
-  sqlite.exec('PRAGMA journal_mode = WAL');
-  sqlite.exec('PRAGMA foreign_keys = ON');
-  return drizzle(sqlite, { schema }) as unknown as Db;
-}
-
 /** Float64Array to a blob for storage. */
 export function toBlob(arr: Float64Array): Buffer {
   return Buffer.from(arr.buffer.slice(arr.byteOffset, arr.byteOffset + arr.byteLength));

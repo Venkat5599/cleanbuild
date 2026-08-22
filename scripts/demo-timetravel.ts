@@ -30,7 +30,7 @@ import {
   type FeatureLabels,
   type Marginal,
 } from '../packages/core/src/index.js';
-import { fromFile } from '../packages/db/src/client.js';
+import { fromFile } from '../packages/db/src/local.js';
 import {
   getPosterior,
   insertFeatures,
@@ -57,7 +57,7 @@ if (process.stdout.isTTY) {
 const log = pino(logOptions);
 
 const deliver = process.argv.includes('--deliver');
-const db = await fromFile('.data/dev.db');
+const db = fromFile('.data/dev.db');
 
 const creators = await listCreators(db);
 if (creators.length === 0) {

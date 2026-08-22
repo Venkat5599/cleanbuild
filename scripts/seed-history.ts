@@ -36,7 +36,8 @@ import {
   type LengthBucket,
   type ThumbnailArchetype,
 } from '../packages/core/src/index.js';
-import { fromFile, type Db } from '../packages/db/src/client.js';
+import { fromFile } from '../packages/db/src/local.js';
+import type { Db } from '../packages/db/src/client.js';
 import {
   CHECKPOINT_ORDER,
   closeExperiment,
@@ -261,7 +262,7 @@ export async function seed(db: Db, opts: Options) {
 if (import.meta.main) {
   const opts = parseArgs(process.argv.slice(2));
   await mkdir('.data', { recursive: true });
-  const db = await fromFile(opts.dbPath);
+  const db = fromFile(opts.dbPath);
   const result = await seed(db, opts);
   console.log(
     `seeded creator ${result.creatorId}: ${result.posts} posts across ${result.weeks} weeks`,

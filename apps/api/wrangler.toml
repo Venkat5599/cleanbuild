@@ -14,6 +14,7 @@ binding = "DB"
 database_name = "ratchet"
 # Filled in by `wrangler d1 create ratchet`.
 database_id = "REPLACE_WITH_D1_DATABASE_ID"
+# Local dev uses wrangler's built-in miniflare D1; no cloud resource needed.
 migrations_dir = "../../packages/db/migrations"
 
 [vars]

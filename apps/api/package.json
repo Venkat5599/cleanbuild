@@ -18,5 +18,9 @@
     "@orpc/server": "^1.15.0",
     "zod": "^4.0.0",
     "@ratchet/observability": "workspace:*"
+  },
+  "exports": {
+    ".": "./src/index.ts",
+    "./router": "./src/router.ts"
   }
 }

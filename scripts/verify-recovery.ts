@@ -15,7 +15,7 @@
  */
 
 import { DIMENSIONS, FEATURE_NAMES, marginal, featureIndex } from '../packages/core/src/index.js';
-import { fromFile } from '../packages/db/src/client.js';
+import { fromFile } from '../packages/db/src/local.js';
 import { closedExperiments, listCreators } from '../packages/db/src/queries.js';
 import {
   backfillSnapshots,
@@ -61,7 +61,7 @@ function correlation(a: Float64Array, b: Float64Array): number {
   return num / Math.sqrt(da * dbb);
 }
 
-const db = await fromFile('.data/dev.db');
+const db = fromFile('.data/dev.db');
 const creators = await listCreators(db);
 if (creators.length === 0) {
   console.error('no creators — run: bun scripts/seed-history.ts');

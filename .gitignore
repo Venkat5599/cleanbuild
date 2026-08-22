@@ -7,3 +7,10 @@ dist/
 bun.lockb
 .DS_Store
 .data/
+.dev.vars
+saas/.next/
+saas/node_modules/
+saas/.env.local
+apps/api/.wrangler/
+apps/web/.output/
+apps/web/.nitro/

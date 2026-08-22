@@ -213,3 +213,170 @@ tbody tr:hover td {
 .neg { color: var(--neg); }
 .dim { color: var(--text-dim); }
 .faint { color: var(--text-faint); }
+
+/* --- interval field ------------------------------------------------------ */
+
+.field {
+  display: block;
+  min-width: 802px;
+}
+
+.legend {
+  margin: 0 0 0.5rem;
+}
+
+.legend__item {
+  margin-right: 1.5rem;
+  white-space: nowrap;
+}
+
+.legend__swatch {
+  display: inline-block;
+  width: 18px;
+  height: 3px;
+  vertical-align: middle;
+  margin-right: 0.4rem;
+}
+
+.legend__swatch--ghost { background: var(--rule-strong); }
+.legend__swatch--live { background: var(--text-dim); }
+
+/* --- readout ------------------------------------------------------------- */
+
+.readout {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 2rem;
+  margin-top: 2.5rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--rule);
+}
+
+.readout__item p {
+  margin: 0 0 0.35rem;
+  max-width: 46ch;
+}
+
+.readout__item .meta {
+  margin-bottom: 0.5rem;
+}
+
+/* --- log ----------------------------------------------------------------- */
+
+.log {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.log__entry {
+  border-top: 1px solid var(--rule);
+  padding: 1.1rem 0;
+}
+
+.log__summary {
+  margin: 0.35rem 0 0;
+  max-width: var(--measure);
+}
+
+.log__deltas {
+  list-style: none;
+  margin: 0.6rem 0 0;
+  padding: 0;
+  font-size: 0.78rem;
+}
+
+.log__deltas li {
+  display: grid;
+  grid-template-columns: 14rem 5rem 1fr;
+  gap: 0.75rem;
+  padding: 0.15rem 0;
+}
+
+.log__body {
+  font-family: var(--mono);
+  font-size: 0.75rem;
+  line-height: 1.6;
+  color: var(--text-dim);
+  background: var(--ink-sunken);
+  border-left: 2px solid var(--rule-strong);
+  padding: 0.75rem 1rem;
+  margin: 0.6rem 0 0;
+  white-space: pre-wrap;
+  overflow-x: auto;
+}
+
+/* --- prose --------------------------------------------------------------- */
+
+.prose {
+  max-width: var(--measure);
+}
+
+.prose h2 {
+  margin-top: 2.5rem;
+  padding-top: 1.25rem;
+  border-top: 1px solid var(--rule);
+}
+
+.prose p {
+  margin: 0.9rem 0;
+}
+
+.loops {
+  margin: 1.25rem 0 0;
+}
+
+.loops > div {
+  display: grid;
+  grid-template-columns: 9rem 1fr;
+  gap: 1rem;
+  padding: 0.7rem 0;
+  border-bottom: 1px solid var(--ink-raised);
+}
+
+.loops dt {
+  font-family: var(--mono);
+  font-size: 0.8125rem;
+  color: var(--text);
+}
+
+.loops dd {
+  margin: 0;
+  color: var(--text-dim);
+}
+
+.honest {
+  color: var(--text-dim);
+  padding-left: 1.1rem;
+}
+
+.honest li {
+  margin: 0.5rem 0;
+}
+
+.footnote {
+  margin-top: 2rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--rule);
+  color: var(--text-faint);
+  font-size: 0.8125rem;
+  max-width: var(--measure);
+}
+
+/* --- narrow viewports ---------------------------------------------------- */
+
+@media (max-width: 720px) {
+  .log__deltas li {
+    grid-template-columns: 1fr auto;
+  }
+  .loops > div {
+    grid-template-columns: 1fr;
+    gap: 0.25rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    transition-duration: 0.01ms !important;
+  }
+}
