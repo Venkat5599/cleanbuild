@@ -97,7 +97,12 @@ for creative calls.
 ### FR-1 Onboarding and cold start
 
 - FR-1.1 Creator connects a YouTube channel (OAuth) or uploads a CSV export.
-- FR-1.2 System backfills the last N posts (target >= 40) and featurises them.
+- FR-1.2 System backfills the creator's full available history, targeting >= 150 posts.
+  CORRECTED 2026-08-22: the original target of 40 was statistically impossible.
+  With 35 feature weights, 35 closed experiments leaves the posterior at its prior
+  (credible intervals +/-0.75 against effects of 0.2-0.6). Measured, not assumed —
+  see `scripts/verify-recovery.ts`. Below ~150 posts the product depends on the
+  niche prior (FR-9), which is the real answer to cold start.
 - FR-1.3 Creator selects a niche from a fixed taxonomy.
 - FR-1.4 Posterior initialises from `mu_niche` for that niche, not from zero.
 - FR-1.5 Mind writes an onboarding memory entry: who this creator is, niche, cadence, goals.

@@ -364,3 +364,45 @@ All defaults live in one module and are surfaced in the dashboard, so the demo c
 
 Critical path is Day 25. If `demo-timetravel.ts` does not pass on Day 25, execute the PRD cut order
 immediately rather than on Day 27.
+
+---
+
+## 13. Stack revision (2026-08-22)
+
+The原 design assumed Neon Postgres and a self-hosted worker. Revised to the
+Cloudflare stack:
+
+| Layer | Choice |
+|---|---|
+| Runtime | Cloudflare Workers |
+| Database | D1 (SQLite) via Drizzle ORM |
+| HTTP | Hono |
+| RPC | oRPC (type-safe, shared client/server types) |
+| Frontend | TanStack Start |
+| Monorepo | Bun workspaces + Turborepo |
+| Lint/format | oxlint / oxfmt |
+| IaC | Alchemy |
+
+Why it is a genuine improvement, not just a preference: **Cloudflare Cron
+Triggers give the maturation loop a real, free, platform-native scheduler.**
+The autonomy claim in section 7 stops depending on a machine someone has to keep
+running, which is the single most fragile part of the original plan.
+
+Two consequences, both accepted deliberately:
+
+- **No pgvector.** The Canon Gate scans a creator's claims and scores cosine
+  similarity in JavaScript. At a few hundred claims per creator that is
+  microseconds. If a creator outgrows it the embeddings move to Vectorize; the
+  column is already isolated behind `listClaims`.
+- **No better-auth in v1.** The submission runs a single demo creator with no
+  login. Auth is scaffolding that earns nothing against the judging criteria in
+  the time available. It is the first thing to add after the jam.
+
+`packages/core` is pure TypeScript with no I/O and was unaffected by the change,
+which is precisely why the math was built first.
+
+### Local and production parity
+
+One Drizzle schema, two handles (`packages/db/src/client.ts`): D1 inside a
+Worker, `bun:sqlite` for seeding, tests and the time-travel demo. The autonomous
+path exercised locally is byte-for-byte the one that runs on cron.
