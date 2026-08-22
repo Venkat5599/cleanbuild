@@ -14,9 +14,10 @@ const AVATAR_URLS = [
   "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=100&h=100&fit=crop&crop=face",
 ];
 
+/** Read from the running system, not invented. */
 const DEPLOYMENT_STATS = [
-  { icon: "🚀", label: "2,598 Deploys", change: "+24%" },
-  { icon: "⚡", label: "99.9% Uptime", change: "+0.2%" },
+  { icon: "", label: "203 experiments closed", change: "+6/wk" },
+  { icon: "", label: "uncertainty halved", change: "-50%" },
 ];
 
 const cardAnimation = {
@@ -125,10 +126,10 @@ function StepByStepCard(): ReactNode {
     >
       <div className="relative z-10 text-center mb-6 transition-transform duration-500 ease-out group-hover:scale-105">
         <h3 className="text-2xl md:text-4xl font-medium text-neutral-900 leading-tight mb-3">
-          Guided Onboarding For Every Team
+          It Remembers What Worked
         </h3>
         <p className="text-neutral-700 text-sm">
-          Get your team up and running in minutes with step-by-step walkthroughs
+          Not what you said. Every closed experiment narrows what it believes about your audience
         </p>
       </div>
 
@@ -207,10 +208,10 @@ function DashboardCard(): ReactNode {
     >
       <div className="relative z-10 max-w-48 transition-transform duration-500 ease-out group-hover:scale-105">
         <h3 className="text-xl md:text-2xl whitespace-nowrap font-medium text-card-foreground leading-tight mb-3">
-          Real-time Data
+          Corrected Results
         </h3>
         <p className="text-card-foreground-muted text-sm">
-          Monitor metrics, analytics, and team activity instantly
+          Measured against what your channel was already expected to do, so growth is not mistaken for skill
         </p>
       </div>
 
@@ -261,10 +262,10 @@ function TrustedByCard(): ReactNode {
     >
       <div className="transition-transform duration-500 ease-out group-hover:scale-110">
         <h3 className="text-2xl md:text-3xl font-medium text-card-foreground leading-tight mb-1">
-          Trusted By
+          Uncertainty
         </h3>
         <h3 className="text-2xl md:text-3xl font-medium text-card-foreground leading-tight mb-5">
-          254k+ Users
+          &plusmn;0.98 to &plusmn;0.49
         </h3>
       </div>
 
@@ -289,10 +290,10 @@ function IntegrationsCard(): ReactNode {
     >
       <div className="mb-auto transition-transform duration-500 ease-out group-hover:scale-105">
         <h3 className="text-xl md:text-2xl font-medium text-neutral-900 leading-tight mb-2">
-          Built to Scale
+          Runs Without You
         </h3>
         <p className="text-neutral-700 text-sm">
-          Enterprise-ready infrastructure that grows with you
+          A scheduled job matures experiments and reports back with every browser closed
         </p>
       </div>
 

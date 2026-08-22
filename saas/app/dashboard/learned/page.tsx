@@ -1,4 +1,5 @@
 import { getLearned, level } from '@/lib/ratchet';
+import { Empty, PageHead } from '@/components/page-head';
 import type { ReactNode } from 'react';
 
 export const metadata = { title: 'What changed' };
@@ -8,27 +9,19 @@ export default async function LearnedPage(): Promise<ReactNode> {
 
   if (rows.length === 0) {
     return (
-      <div className="border-border text-muted-foreground border-l-2 py-3 pl-4">
-        <p className="text-foreground font-medium">Nothing learned yet.</p>
-        <p className="mt-1 max-w-[52ch] text-sm">
-          Each entry is written when an experiment closes. The first appears seven days after the
-          first post.
-        </p>
-      </div>
+      <Empty
+        title="Nothing learned yet."
+        body="Each entry is written when an experiment closes. The first appears seven days after the first post."
+      />
     );
   }
 
   return (
     <main>
-      <header className="mb-8">
-        <h1 className="text-foreground text-2xl font-medium tracking-tight md:text-3xl">
-          What changed, and why
-        </h1>
-        <p className="text-muted-foreground mt-2 max-w-[58ch]">
-          Every belief change is recorded with the experiment that caused it. This is the audit
-          trail: nothing moves without a result behind it.
-        </p>
-      </header>
+      <PageHead
+        title="What changed, and why"
+        lede="Every belief change is recorded with the experiment that caused it. This is the audit trail: nothing moves without a result behind it."
+      />
 
       <ol className="list-none p-0">
         {rows.map((row) => (

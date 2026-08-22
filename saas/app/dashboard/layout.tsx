@@ -1,46 +1,21 @@
-import Link from 'next/link';
+import { DashboardSidebar } from '@/components/dashboard-sidebar';
 import type { ReactNode } from 'react';
 
 /**
  * Dashboard shell.
  *
- * Deliberately denser than the marketing pages: hairlines instead of cards,
- * mono for every number, no decorative chrome. It is an instrument panel and
- * should read as one, while staying on the same palette and typeface as the
- * rest of the site so it does not feel like a different product.
+ * A persistent left rail, and one route per thing the agent does. Splitting
+ * them apart rather than stacking everything on one screen means a link points
+ * at a specific claim, which matters when the point of the product is that
+ * every belief has a traceable cause.
  */
-
-const NAV = [
-  { href: '/dashboard', label: 'Posterior' },
-  { href: '/dashboard/ledger', label: 'Ledger' },
-  { href: '/dashboard/learned', label: 'Learned' },
-  { href: '/dashboard/follow-ups', label: 'Follow-ups' },
-] as const;
-
 export default function DashboardLayout({ children }: { children: ReactNode }): ReactNode {
   return (
-    <div className="mx-auto w-full max-w-[1180px] px-6 pb-24">
-      <nav
-        aria-label="Dashboard"
-        className="border-border flex flex-wrap items-baseline gap-x-6 gap-y-2 border-b pt-8 pb-4"
-      >
-        <Link
-          href="/"
-          className="text-foreground mr-auto font-mono text-sm tracking-[0.14em] transition-opacity hover:opacity-70"
-        >
-          RATCHET
-        </Link>
-        {NAV.map((item) => (
-          <Link
-            key={item.href}
-            href={item.href}
-            className="text-muted-foreground hover:text-foreground text-sm transition-colors"
-          >
-            {item.label}
-          </Link>
-        ))}
-      </nav>
-      <div className="pt-10">{children}</div>
+    <div className="flex min-h-[100dvh]">
+      <DashboardSidebar />
+      <div className="min-w-0 flex-1">
+        <div className="mx-auto w-full max-w-[1080px] px-6 py-10 max-lg:pt-20">{children}</div>
+      </div>
     </div>
   );
 }

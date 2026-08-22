@@ -1,4 +1,5 @@
 import { getNotifications } from '@/lib/ratchet';
+import { Empty, PageHead } from '@/components/page-head';
 import type { ReactNode } from 'react';
 
 export const metadata = { title: 'Autonomous follow-ups' };
@@ -9,17 +10,14 @@ export default async function FollowUpsPage(): Promise<ReactNode> {
   if (rows.length === 0) {
     return (
       <main>
-        <h1 className="text-foreground text-2xl font-medium tracking-tight md:text-3xl">
-          Autonomous follow-ups
-        </h1>
-        <div className="border-border text-muted-foreground mt-6 border-l-2 py-3 pl-4">
-          <p className="text-foreground font-medium">No follow-ups yet.</p>
-          <p className="mt-1 max-w-[56ch] text-sm">
-            Nothing is sent until a belief change is worth interrupting someone for: a feature
-            crossing 90% confidence, a settled belief reversing, or one result moving a weight
-            unusually far. Ordinary posts move beliefs slightly and stay in the dashboard.
-          </p>
-        </div>
+        <PageHead
+          title="Autonomous follow-ups"
+          lede="Composed by a scheduled job with nobody logged in."
+        />
+        <Empty
+          title="No follow-ups yet."
+          body="Nothing is sent until a belief change is worth interrupting someone for: a feature crossing 90% confidence, a settled belief reversing, or one result moving a weight unusually far. Ordinary posts move beliefs slightly and stay in the dashboard."
+        />
       </main>
     );
   }
@@ -28,21 +26,17 @@ export default async function FollowUpsPage(): Promise<ReactNode> {
 
   return (
     <main>
-      <header className="mb-8 flex flex-wrap items-baseline justify-between gap-4">
-        <div>
-          <h1 className="text-foreground text-2xl font-medium tracking-tight md:text-3xl">
-            Autonomous follow-ups
-          </h1>
-          <p className="text-muted-foreground mt-2 max-w-[58ch]">
-            Composed by a scheduled job with nobody logged in. The message goes to the Mind, which
-            decides how and when to reach the creator.
-          </p>
-        </div>
-        <p className="text-muted-foreground font-mono text-xs">
-          <span className="text-foreground tabular-nums">{delivered}</span> delivered ·{' '}
-          <span className="text-foreground tabular-nums">{rows.length - delivered}</span> undelivered
-        </p>
-      </header>
+      <PageHead
+        title="Autonomous follow-ups"
+        lede="Composed by a scheduled job with nobody logged in. The message goes to the Mind, which decides how and when to reach the creator."
+        meta={
+          <>
+            <span className="text-foreground tabular-nums">{delivered}</span> delivered ·{' '}
+            <span className="text-foreground tabular-nums">{rows.length - delivered}</span>{' '}
+            undelivered
+          </>
+        }
+      />
 
       <ol className="list-none p-0">
         {rows.map((n) => (

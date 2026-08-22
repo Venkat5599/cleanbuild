@@ -109,6 +109,45 @@ export const getLearned = (limit = 30) =>
 export const getNotifications = (limit = 30) =>
   rpc<NotificationRow[]>('notifications', { creatorId: CREATOR_ID, limit });
 
+export interface BriefRow {
+  id: number;
+  createdAt: number;
+  headline: string;
+  features: Record<string, string | number>;
+  predictedLift: number;
+  ciLow: number;
+  ciHigh: number;
+  rationale: string;
+  isExploratory: boolean;
+  status: string;
+}
+
+export interface GateEventRow {
+  id: number;
+  briefId: number;
+  createdAt: number;
+  rule: 'contradiction' | 'hook_cooldown' | 'dead_format';
+  verdict: 'pass' | 'block';
+  explanation: string;
+  overridden: boolean;
+}
+
+export interface CreatorRow {
+  id: number;
+  handle: string;
+  platform: string;
+  niche: string;
+  followers: number;
+  explorationBudget: number;
+}
+
+export const getBriefs = (limit = 20) =>
+  rpc<BriefRow[]>('briefs', { creatorId: CREATOR_ID, limit });
+
+export const getGateEvents = (limit = 50) => rpc<GateEventRow[]>('gateEvents', { limit });
+
+export const getCreators = () => rpc<CreatorRow[]>('creators', {});
+
 /** Strips the dimension prefix: "hook_type:question" becomes "question". */
 export function level(featureName: string): string {
   return featureName.split(':')[1] ?? featureName;

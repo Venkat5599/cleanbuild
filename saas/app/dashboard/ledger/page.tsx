@@ -1,4 +1,5 @@
 import { getLedger, level } from '@/lib/ratchet';
+import { Empty, PageHead } from '@/components/page-head';
 import type { ReactNode } from 'react';
 
 export const metadata = { title: 'Experiment ledger' };
@@ -8,31 +9,24 @@ export default async function LedgerPage(): Promise<ReactNode> {
 
   if (rows.length === 0) {
     return (
-      <div className="border-border text-muted-foreground border-l-2 py-3 pl-4">
-        <p className="text-foreground font-medium">No closed experiments yet.</p>
-        <p className="mt-1 max-w-[52ch] text-sm">
-          A post enters the ledger seven days after it is published, once its result has settled.
-        </p>
-      </div>
+      <Empty
+        title="No closed experiments yet."
+        body="A post enters the ledger seven days after it is published, once its result has settled."
+      />
     );
   }
 
   return (
     <main>
-      <header className="mb-8 flex flex-wrap items-baseline justify-between gap-4">
-        <div>
-          <h1 className="text-foreground text-2xl font-medium tracking-tight md:text-3xl">
-            Experiment ledger
-          </h1>
-          <p className="text-muted-foreground mt-2 max-w-[58ch]">
-            Every published post, the creative choices it made, and how far it landed from its own
-            predicted baseline.
-          </p>
-        </div>
-        <p className="text-muted-foreground font-mono text-xs">
-          <span className="text-foreground tabular-nums">{rows.length}</span> shown
-        </p>
-      </header>
+      <PageHead
+        title="Experiment ledger"
+        lede="Every published post, the creative choices it made, and how far it landed from its own predicted baseline."
+        meta={
+          <>
+            <span className="text-foreground tabular-nums">{rows.length}</span> shown
+          </>
+        }
+      />
 
       <div className="overflow-x-auto">
         <table className="w-full border-collapse text-sm">
