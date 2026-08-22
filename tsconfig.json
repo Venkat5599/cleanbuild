@@ -11,7 +11,8 @@
     "skipLibCheck": true,
     "allowImportingTsExtensions": true,
     "noEmit": true,
-    "types": ["bun"]
+    "types": ["bun", "@cloudflare/workers-types"]
   },
-  "include": ["packages/*/src/**/*", "packages/*/test/**/*", "apps/*/src/**/*", "scripts/**/*"]
+  "include": ["packages/*/src/**/*", "packages/*/test/**/*", "apps/*/src/**/*", "scripts/**/*"],
+  "exclude": ["node_modules", "**/dist", ".data"]
 }

@@ -1,0 +1,22 @@
+{
+  "name": "@ratchet/api",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "db:migrate:local": "wrangler d1 migrations apply ratchet --local",
+    "db:migrate:remote": "wrangler d1 migrations apply ratchet --remote"
+  },
+  "dependencies": {
+    "@ratchet/core": "workspace:*",
+    "@ratchet/db": "workspace:*",
+    "@ratchet/mind": "workspace:*",
+    "@ratchet/pipeline": "workspace:*",
+    "hono": "^4.6.0",
+    "@orpc/server": "^1.15.0",
+    "zod": "^4.0.0",
+    "@ratchet/observability": "workspace:*"
+  }
+}

@@ -1,0 +1,26 @@
+name = "ratchet-api"
+main = "src/index.ts"
+compatibility_date = "2026-08-01"
+compatibility_flags = ["nodejs_compat"]
+
+# The autonomous path. Nothing here needs a request, a session, or a browser.
+#   hourly  -> mature due experiments, update beliefs, brief the Mind
+#   nightly -> refit baselines and rebuild every posterior with a full solve
+[triggers]
+crons = ["0 * * * *", "0 3 * * *"]
+
+[[d1_databases]]
+binding = "DB"
+database_name = "ratchet"
+# Filled in by `wrangler d1 create ratchet`.
+database_id = "REPLACE_WITH_D1_DATABASE_ID"
+migrations_dir = "../../packages/db/migrations"
+
+[vars]
+ALLOWED_ORIGINS = "http://localhost:3000"
+
+# Secrets are set with `wrangler secret put`, never committed:
+#   MINDS_BUILDER_API_KEY
+#   MINDS_ALIAS
+#   TELEGRAM_BOT_TOKEN
+#   TELEGRAM_CHAT_ID
