@@ -3,7 +3,6 @@
 import { useRef } from "react";
 import { motion, useScroll, useTransform } from "motion/react";
 import { PenLine, Timer, Scale, Send } from "lucide-react";
-import { howItWorksConfig } from "@/lib/config";
 import type { ReactNode } from "react";
 
 /**
@@ -81,19 +80,21 @@ export function HowItWorks(): ReactNode {
     >
       <div className="mx-auto grid max-w-5xl gap-12 px-6 py-20 sm:py-28 lg:grid-cols-2 lg:gap-20">
         <div className="lg:sticky lg:top-48 lg:h-fit lg:self-start">
-          <h2 className="text-3xl font-semibold tracking-tight text-foreground sm:text-4xl lg:text-5xl">
-            {howItWorksConfig.title}
+          <h2 className="text-4xl font-semibold tracking-tight text-foreground sm:text-5xl lg:text-6xl">
+            How the loop closes
           </h2>
           <p className="mt-6 max-w-md text-lg leading-relaxed text-foreground/60">
-            {howItWorksConfig.description}
+            Four steps, three of which happen while nobody is watching. The only{" "}
+            <span className="font-medium text-foreground">human decision</span> is
+            whether to publish.
           </p>
           <motion.a
-            href={howItWorksConfig.cta.href}
+            href="#"
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
             className="mt-8 inline-flex items-center rounded-xl bg-foreground px-6 py-3 text-sm font-semibold text-background transition-colors hover:bg-foreground/90"
           >
-            {howItWorksConfig.cta.text}
+            Read the technical write-up
           </motion.a>
         </div>
 

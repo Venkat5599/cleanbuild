@@ -1,7 +1,6 @@
 "use client";
 
-import Link from "next/link";
-
+import { ArrowRight, Mail } from "lucide-react";
 import type { ReactNode } from "react";
 
 const footerLinks = {
@@ -28,33 +27,33 @@ export function Footer(): ReactNode {
         <div className="relative w-full rounded-3xl overflow-hidden shadow-2xl/15">
           <div 
             className="absolute inset-0 bg-center bg-no-repeat brightness-150 blur scale-125"
-            style={{ background: 'var(--muted)' }}
+            style={{ backgroundImage: 'url(/BG.jpg)', backgroundSize: '150%' }}
             aria-hidden="true"
           />
           
-          <div className="relative z-10 flex flex-col items-center px-12 py-20 text-center max-[850px]:px-6 max-[850px]:py-12">
-            <h2 className="text-foreground mb-6 max-w-2xl text-3xl font-medium tracking-tight max-[850px]:text-2xl">
+          <div className="relative z-10 flex flex-col items-center text-center px-12 py-24 max-[850px]:px-6 max-[850px]:py-6 max-[850px]:pt-12">
+            <h2 className="text-6xl max-[850px]:text-3xl text-black font-medium tracking-tight max-w-2xl mb-14 max-[850px]:mb-8">
               Built for Creative Minds Jam #1
             </h2>
-            <p className="text-muted-foreground mb-9 max-w-lg leading-relaxed">
-              Audience Growth and Engagement track. The learning loop, the agent and the dashboard
-              are all in the repository, along with a script that runs the whole autonomous path
-              with no browser open.
-            </p>
-            <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-3">
-              <Link
-                href="/dashboard"
-                className="bg-foreground text-background rounded-xl px-6 py-3 text-sm font-medium transition-opacity hover:opacity-90 active:scale-[0.98]"
+            
+            <form className="flex items-center w-full max-w-md bg-background rounded-xl p-1.5 shadow-lg max-[850px]:flex-col max-[850px]:p-3 max-[850px]:gap-3 max-[850px]:max-w-none">
+              <div className="flex items-center flex-1 w-full">
+                <Mail className="w-5 h-5 text-muted-foreground ml-3 flex-none max-[850px]:ml-1" aria-hidden="true" />
+                <input
+                  type="email"
+                  placeholder="Enter your email"
+                  aria-label="Email address"
+                  className="flex-1 px-3 py-2.5 text-sm bg-transparent text-foreground placeholder:text-muted-foreground focus:outline-none"
+                />
+              </div>
+              <button
+                type="submit"
+                className="flex items-center justify-center gap-2 px-5 py-2.5 bg-foreground hover:bg-foreground/90 text-background rounded-lg text-sm font-medium transition-colors whitespace-nowrap max-[850px]:w-full max-[850px]:py-3"
               >
-                Open the dashboard
-              </Link>
-              <a
-                href="https://github.com/Venkat5599/cleanbuild"
-                className="text-muted-foreground hover:text-foreground text-sm transition-colors"
-              >
-                Read the source
-              </a>
-            </div>
+                Join Waitlist
+                <ArrowRight className="w-4 h-4" aria-hidden="true" />
+              </button>
+            </form>
           </div>
         </div>
       </div>
@@ -64,16 +63,16 @@ export function Footer(): ReactNode {
           <div className="flex items-start justify-between gap-12 max-[850px]:flex-col max-[850px]:gap-10">
             <a href="#" className="flex items-center gap-2" aria-label="RATCHET home">
               <div className="w-8 h-8 rounded-full bg-neutral-900" />
-              <span className="text-xl font-semibold text-foreground leading-0">RATCHET</span>
+              <span className="text-xl font-semibold text-neutral-900 leading-0">RATCHET</span>
             </a>
 
             <nav className="flex gap-16 max-[850px]:gap-10 max-[850px]:flex-wrap" aria-label="Footer navigation">
               <div>
-                <h3 className="text-xs font-medium text-foreground/50 uppercase tracking-wider mb-4">Menu</h3>
+                <h3 className="text-xs font-medium text-neutral-900/50 uppercase tracking-wider mb-4">Menu</h3>
                 <ul className="space-y-2">
                   {footerLinks.menu.map((link) => (
                     <li key={link.label}>
-                      <a href={link.href} className="text-sm text-foreground hover:text-foreground/70 transition-colors">
+                      <a href={link.href} className="text-sm text-neutral-900 hover:text-neutral-900/70 transition-colors">
                         {link.label}
                       </a>
                     </li>
@@ -82,11 +81,11 @@ export function Footer(): ReactNode {
               </div>
 
               <div>
-                <h3 className="text-xs font-medium text-foreground/50 uppercase tracking-wider mb-4">Company</h3>
+                <h3 className="text-xs font-medium text-neutral-900/50 uppercase tracking-wider mb-4">Company</h3>
                 <ul className="space-y-2">
                   {footerLinks.company.map((link) => (
                     <li key={link.label}>
-                      <a href={link.href} className="text-sm text-foreground hover:text-foreground/70 transition-colors">
+                      <a href={link.href} className="text-sm text-neutral-900 hover:text-neutral-900/70 transition-colors">
                         {link.label}
                       </a>
                     </li>
@@ -95,11 +94,11 @@ export function Footer(): ReactNode {
               </div>
 
               <div>
-                <h3 className="text-xs font-medium text-foreground/50 uppercase tracking-wider mb-4">Social</h3>
+                <h3 className="text-xs font-medium text-neutral-900/50 uppercase tracking-wider mb-4">Social</h3>
                 <ul className="space-y-2">
                   {footerLinks.social.map((link) => (
                     <li key={link.label}>
-                      <a href={link.href} className="text-sm text-foreground hover:text-foreground/70 transition-colors">
+                      <a href={link.href} className="text-sm text-neutral-900 hover:text-neutral-900/70 transition-colors">
                         {link.label}
                       </a>
                     </li>
@@ -110,7 +109,7 @@ export function Footer(): ReactNode {
           </div>
 
           <div className="mt-16 pt-6">
-            <p className="text-sm text-foreground/50 text-center">
+            <p className="text-sm text-neutral-900/50 text-center">
               © {new Date().getFullYear()} RATCHET. Audience Growth and Engagement track.
             </p>
           </div>
