@@ -1,0 +1,215 @@
+/*
+ * RATCHET design tokens.
+ *
+ * Decisions, each one deliberate and checkable:
+ *
+ * SURFACE   Warm ink, not the cool blue-charcoal that every dark product
+ *           defaults to. The hue is pulled toward brown so the sage and clay
+ *           signals below read as pigment on paper rather than as neon.
+ *
+ * COLOUR    There is no brand accent. Colour carries exactly one meaning here:
+ *           the sign of an effect. Sage means a feature helps, clay means it
+ *           hurts. Both are heavily desaturated, because a poster-bright fill
+ *           on a statistical readout implies a confidence the data does not
+ *           have.
+ *
+ * TYPE      System UI for prose, a real mono for every number. Mono is correct
+ *           when the content is genuinely data, and on this page it always is.
+ *           No display face is loaded: the signature of this product is the
+ *           interval field, not a typeface, and shipping a downloaded font to
+ *           carry an identity it is not carrying would be costume.
+ *
+ * SHAPE     Radius zero everywhere. One scale, no exceptions.
+ *
+ * DENSITY   High. Hairlines separate data instead of cards. An instrument
+ *           panel, not a marketing page.
+ */
+
+:root {
+  --ink: #131210;
+  --ink-raised: #1a1815;
+  --ink-sunken: #0e0d0c;
+  --rule: #2b2723;
+  --rule-strong: #3d3833;
+
+  --text: #ece7df;
+  --text-dim: #9a9187;
+  --text-faint: #6b645c;
+
+  /* Direction, not decoration. */
+  --pos: #7fa87a;
+  --neg: #b5766a;
+  --pos-ghost: #7fa87a33;
+  --neg-ghost: #b5766a33;
+
+  --mono: ui-monospace, "SF Mono", "Cascadia Mono", "Roboto Mono", Menlo, Consolas, monospace;
+  --sans: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+
+  --gutter: clamp(1.25rem, 4vw, 3rem);
+  --measure: 68ch;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  color-scheme: dark;
+}
+
+body {
+  margin: 0;
+  background: var(--ink);
+  color: var(--text);
+  font-family: var(--sans);
+  font-size: 15px;
+  line-height: 1.55;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Numbers are data. They get the mono and they get tabular figures so columns
+   line up and a changing value does not shift its neighbours. */
+.num {
+  font-family: var(--mono);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.01em;
+}
+
+a {
+  color: inherit;
+}
+
+h1,
+h2,
+h3 {
+  font-weight: 560;
+  letter-spacing: -0.015em;
+  margin: 0;
+}
+
+h1 {
+  font-size: clamp(1.5rem, 3vw, 2rem);
+  line-height: 1.15;
+}
+
+h2 {
+  font-size: 1.0625rem;
+}
+
+.page {
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 0 var(--gutter) 6rem;
+}
+
+/* Navigation. One line, contained, no dot markers, weight carries the active
+   state rather than an ornament bolted underneath. */
+.nav {
+  display: flex;
+  align-items: baseline;
+  gap: 1.5rem;
+  border-bottom: 1px solid var(--rule);
+  padding: 1.15rem 0 0.9rem;
+  margin-bottom: 2.5rem;
+  flex-wrap: wrap;
+}
+
+.nav__mark {
+  font-family: var(--mono);
+  font-size: 0.8125rem;
+  letter-spacing: 0.14em;
+  color: var(--text);
+  margin-right: auto;
+  text-decoration: none;
+}
+
+.nav__link {
+  font-size: 0.875rem;
+  color: var(--text-faint);
+  text-decoration: none;
+  transition: color 140ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.nav__link:hover,
+.nav__link:focus-visible {
+  color: var(--text);
+}
+
+.nav__link[data-active='true'] {
+  color: var(--text);
+  font-weight: 560;
+}
+
+:focus-visible {
+  outline: 2px solid var(--text-dim);
+  outline-offset: 2px;
+}
+
+.section-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1.25rem;
+  flex-wrap: wrap;
+}
+
+.meta {
+  font-family: var(--mono);
+  font-size: 0.75rem;
+  color: var(--text-faint);
+}
+
+.lede {
+  color: var(--text-dim);
+  max-width: var(--measure);
+  margin: 0.5rem 0 0;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.8125rem;
+}
+
+thead th {
+  text-align: left;
+  font-weight: 500;
+  color: var(--text-faint);
+  border-bottom: 1px solid var(--rule);
+  padding: 0 0.75rem 0.5rem 0;
+  white-space: nowrap;
+}
+
+tbody td {
+  padding: 0.55rem 0.75rem 0.55rem 0;
+  border-bottom: 1px solid var(--ink-raised);
+  vertical-align: top;
+}
+
+tbody tr:hover td {
+  background: var(--ink-raised);
+}
+
+.scroll-x {
+  overflow-x: auto;
+}
+
+.state {
+  border-left: 2px solid var(--rule-strong);
+  padding: 0.75rem 0 0.75rem 1rem;
+  color: var(--text-dim);
+  max-width: var(--measure);
+}
+
+.state strong {
+  color: var(--text);
+  font-weight: 560;
+}
+
+.pos { color: var(--pos); }
+.neg { color: var(--neg); }
+.dim { color: var(--text-dim); }
+.faint { color: var(--text-faint); }
