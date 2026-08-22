@@ -74,6 +74,13 @@
         "drizzle-orm": "^0.44.0",
       },
     },
+    "packages/memory": {
+      "name": "@ratchet/memory",
+      "version": "0.1.0",
+      "dependencies": {
+        "@ratchet/core": "workspace:*",
+      },
+    },
     "packages/mind": {
       "name": "@ratchet/mind",
       "version": "0.1.0",
@@ -374,6 +381,8 @@
     "@ratchet/core": ["@ratchet/core@workspace:packages/core"],
 
     "@ratchet/db": ["@ratchet/db@workspace:packages/db"],
+
+    "@ratchet/memory": ["@ratchet/memory@workspace:packages/memory"],
 
     "@ratchet/mind": ["@ratchet/mind@workspace:packages/mind"],
 

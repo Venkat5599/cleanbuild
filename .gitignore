@@ -14,3 +14,4 @@ saas/.env.local
 apps/api/.wrangler/
 apps/web/.output/
 apps/web/.nitro/
+.data/memory-graph.json
