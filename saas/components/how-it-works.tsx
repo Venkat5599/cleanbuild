@@ -3,6 +3,7 @@
 import { useRef } from "react";
 import { motion, useScroll, useTransform } from "motion/react";
 import { PenLine, Timer, Scale, Send } from "lucide-react";
+import { howItWorksConfig } from "@/lib/config";
 import type { ReactNode } from "react";
 
 /**
@@ -80,21 +81,19 @@ export function HowItWorks(): ReactNode {
     >
       <div className="mx-auto grid max-w-5xl gap-12 px-6 py-20 sm:py-28 lg:grid-cols-2 lg:gap-20">
         <div className="lg:sticky lg:top-48 lg:h-fit lg:self-start">
-          <h2 className="text-4xl font-semibold tracking-tight text-foreground sm:text-5xl lg:text-6xl">
-            How it works
+          <h2 className="text-3xl font-semibold tracking-tight text-foreground sm:text-4xl lg:text-5xl">
+            {howItWorksConfig.title}
           </h2>
           <p className="mt-6 max-w-md text-lg leading-relaxed text-foreground/60">
-            Your platform, configured by experts and launched on an{" "}
-            <span className="font-medium text-foreground">Enterprise plan</span>
-            , ready to grow with you.
+            {howItWorksConfig.description}
           </p>
           <motion.a
-            href="#"
+            href={howItWorksConfig.cta.href}
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
             className="mt-8 inline-flex items-center rounded-xl bg-foreground px-6 py-3 text-sm font-semibold text-background transition-colors hover:bg-foreground/90"
           >
-            Schedule kickoff
+            {howItWorksConfig.cta.text}
           </motion.a>
         </div>
 

@@ -38,9 +38,9 @@ export const heroConfig = {
   // is not a launch announcement.
   badge: '',
   headline: {
-    line1: 'Stop guessing',
-    line2: 'what your audience',
-    accent: 'actually wants',
+    line1: 'Every post is an experiment.',
+    line2: 'Start',
+    accent: 'recording them.',
   },
   subheadline:
     'Every post becomes a logged experiment. The result is collected days later, corrected for the things you do not control, and folded into a model of your audience that never resets.',

@@ -181,13 +181,13 @@ export function Header(): ReactNode {
             onClose={() => setActiveMenu(null)}
           />
           <a href="#pricing" className="px-4 py-2 max-[1200px]:px-3 text-sm font-medium text-foreground/80 hover:text-foreground transition-colors rounded-full hover:bg-foreground/5">
-            Pricing
+            Dashboard
           </a>
         </nav>
 
         <div className="flex items-center gap-4 max-[850px]:hidden">
           <a href="#" className="text-sm font-medium text-foreground/80 hover:text-foreground transition-colors">
-            Sign in
+            Source
           </a>
           <a href="#" className="group relative inline-flex items-center">
             <span className="absolute right-0 inset-y-0 w-[calc(100%-1.5rem)] rounded-xl bg-accent" />
@@ -237,13 +237,13 @@ export function Header(): ReactNode {
                   onClose={closeMobile}
                 />
                 <a href="#pricing" className="flex items-center justify-between py-4 text-base font-medium text-foreground" onClick={closeMobile}>
-                  Pricing
+                  Dashboard
                 </a>
               </nav>
 
               <div className="flex items-center justify-between pt-8 pb-2">
                 <a href="#" className="text-base font-medium text-foreground" onClick={closeMobile}>
-                  Sign in
+                  Source
                 </a>
                 <a href="#" className="group relative inline-flex items-center" onClick={closeMobile}>
                   <span className="absolute right-0 inset-y-0 w-[calc(100%-1.5rem)] rounded-2xl bg-accent" />
