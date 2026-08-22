@@ -1,11 +1,15 @@
-import { getLearned, level } from '@/lib/ratchet';
+import { getLearned, level, orUnavailable } from '@/lib/ratchet';
 import { Empty, PageHead } from '@/components/page-head';
+import { NotConnected } from '../not-connected';
 import type { ReactNode } from 'react';
+
+export const dynamic = 'force-dynamic';
 
 export const metadata = { title: 'What changed' };
 
 export default async function LearnedPage(): Promise<ReactNode> {
-  const rows = await getLearned(30);
+  const rows = await orUnavailable(() => getLearned(30), null);
+  if (!rows) return <NotConnected />;
 
   if (rows.length === 0) {
     return (

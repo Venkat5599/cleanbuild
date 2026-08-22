@@ -1,7 +1,10 @@
 import Link from 'next/link';
 import { PageHead } from '@/components/page-head';
-import { getLearned, getLedger, getNotifications, getPosterior } from '@/lib/ratchet';
+import { getLearned, getLedger, getNotifications, getPosterior, orUnavailable } from '@/lib/ratchet';
+import { NotConnected } from './not-connected';
 import type { ReactNode } from 'react';
+
+export const dynamic = 'force-dynamic';
 
 export const metadata = { title: 'Overview' };
 
@@ -13,12 +16,17 @@ export const metadata = { title: 'Overview' };
  * say where the model stands and what it did last.
  */
 export default async function OverviewPage(): Promise<ReactNode> {
-  const [posterior, ledger, learned, notifications] = await Promise.all([
-    getPosterior(),
-    getLedger(5),
-    getLearned(3),
-    getNotifications(3),
-  ]);
+  const data = await orUnavailable(
+    async () => ({
+      posterior: await getPosterior(),
+      ledger: await getLedger(5),
+      learned: await getLearned(3),
+      notifications: await getNotifications(3),
+    }),
+    null,
+  );
+  if (!data) return <NotConnected />;
+  const { posterior, ledger, learned, notifications } = data;
 
   const confident = posterior.marginals.filter(
     (m) => m.probPositive >= 0.9 || m.probPositive <= 0.1,

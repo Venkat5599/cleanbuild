@@ -1,13 +1,20 @@
 import { IntervalField, type IntervalDatum } from '@/components/interval-field';
 import { PageHead } from '@/components/page-head';
-import { getPosterior, getSnapshotWeeks, getTimeTravel } from '@/lib/ratchet';
+import { getPosterior, getSnapshotWeeks, getTimeTravel, orUnavailable } from '@/lib/ratchet';
+import { NotConnected } from '../not-connected';
 import type { ReactNode } from 'react';
+
+export const dynamic = 'force-dynamic';
 
 export const metadata = { title: 'Posterior' };
 
 export default async function PosteriorPage(): Promise<ReactNode> {
-  const posterior = await getPosterior();
-  const weeks = await getSnapshotWeeks();
+  const base = await orUnavailable(
+    async () => ({ posterior: await getPosterior(), weeks: await getSnapshotWeeks() }),
+    null,
+  );
+  if (!base) return <NotConnected />;
+  const { posterior, weeks } = base;
 
   // Two genuinely different snapshots are required. With one week of history
   // the current posterior is shown alone rather than compared with itself,

@@ -1,11 +1,15 @@
-import { getLedger, level } from '@/lib/ratchet';
+import { getLedger, level, orUnavailable } from '@/lib/ratchet';
 import { Empty, PageHead } from '@/components/page-head';
+import { NotConnected } from '../not-connected';
 import type { ReactNode } from 'react';
+
+export const dynamic = 'force-dynamic';
 
 export const metadata = { title: 'Experiment ledger' };
 
 export default async function LedgerPage(): Promise<ReactNode> {
-  const rows = await getLedger(100);
+  const rows = await orUnavailable(() => getLedger(100), null);
+  if (!rows) return <NotConnected />;
 
   if (rows.length === 0) {
     return (

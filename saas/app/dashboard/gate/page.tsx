@@ -1,6 +1,9 @@
 import { Empty, PageHead } from '@/components/page-head';
-import { getGateEvents } from '@/lib/ratchet';
+import { getGateEvents, orUnavailable } from '@/lib/ratchet';
+import { NotConnected } from '../not-connected';
 import type { ReactNode } from 'react';
+
+export const dynamic = 'force-dynamic';
 
 export const metadata = { title: 'Canon gate' };
 
@@ -11,7 +14,8 @@ const RULE_LABEL: Record<string, string> = {
 };
 
 export default async function GatePage(): Promise<ReactNode> {
-  const rows = await getGateEvents(50);
+  const rows = await orUnavailable(() => getGateEvents(50), null);
+  if (!rows) return <NotConnected />;
 
   return (
     <main>

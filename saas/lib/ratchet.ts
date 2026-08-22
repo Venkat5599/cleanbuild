@@ -11,20 +11,55 @@ const API = process.env.RATCHET_API_URL ?? 'http://127.0.0.1:8787';
 /** The demo runs a single creator. Multi-tenant selection is post-jam work. */
 export const CREATOR_ID = 1;
 
+/**
+ * Thrown when the Worker cannot be reached at all.
+ *
+ * Distinguished from a bad response on purpose: a build machine with no Worker
+ * running is an expected condition, and the dashboard should render an honest
+ * "not connected" state rather than failing the deploy.
+ */
+export class ApiUnavailableError extends Error {
+  constructor(readonly procedure: string, cause: unknown) {
+    super(`RATCHET API is unreachable (${procedure}): ${String(cause)}`);
+    this.name = 'ApiUnavailableError';
+  }
+}
+
 async function rpc<T>(procedure: string, input: unknown): Promise<T> {
-  const res = await fetch(`${API}/rpc/${procedure}`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ json: input }),
-    // Beliefs change when the cron runs, not when someone refreshes. A short
-    // revalidation keeps the page current without hammering the Worker.
-    next: { revalidate: 30 },
-  });
+  let res: Response;
+  try {
+    res = await fetch(`${API}/rpc/${procedure}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ json: input }),
+      // Beliefs change when the cron runs, not when someone refreshes. A short
+      // revalidation keeps pages current without hammering the Worker.
+      next: { revalidate: 30 },
+    });
+  } catch (e) {
+    throw new ApiUnavailableError(procedure, e);
+  }
   if (!res.ok) {
-    throw new Error(`RATCHET API ${procedure} failed with ${res.status}`);
+    throw new ApiUnavailableError(procedure, `HTTP ${res.status}`);
   }
   const body = (await res.json()) as { json: T };
   return body.json;
+}
+
+/**
+ * Run a loader, returning a fallback when the Worker is simply not there.
+ *
+ * Only ApiUnavailableError is caught. A malformed response or a bug in a page
+ * still surfaces, because silently swallowing those would hide real faults
+ * behind a permanently empty dashboard.
+ */
+export async function orUnavailable<T>(load: () => Promise<T>, fallback: T): Promise<T> {
+  try {
+    return await load();
+  } catch (e) {
+    if (e instanceof ApiUnavailableError) return fallback;
+    throw e;
+  }
 }
 
 export interface Marginal {

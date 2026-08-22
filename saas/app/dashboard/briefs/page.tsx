@@ -1,6 +1,9 @@
 import { Empty, PageHead } from '@/components/page-head';
-import { getBriefs } from '@/lib/ratchet';
+import { getBriefs, orUnavailable } from '@/lib/ratchet';
+import { NotConnected } from '../not-connected';
 import type { ReactNode } from 'react';
+
+export const dynamic = 'force-dynamic';
 
 export const metadata = { title: 'Briefs' };
 
@@ -12,7 +15,8 @@ export const metadata = { title: 'Briefs' };
  * which is the only way a belief that is wrong ever gets found out.
  */
 export default async function BriefsPage(): Promise<ReactNode> {
-  const briefs = await getBriefs(20);
+  const briefs = await orUnavailable(() => getBriefs(20), null);
+  if (!briefs) return <NotConnected />;
   const exploratory = briefs.filter((b) => b.isExploratory).length;
 
   return (

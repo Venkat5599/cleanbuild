@@ -1,11 +1,15 @@
-import { getNotifications } from '@/lib/ratchet';
+import { getNotifications, orUnavailable } from '@/lib/ratchet';
 import { Empty, PageHead } from '@/components/page-head';
+import { NotConnected } from '../not-connected';
 import type { ReactNode } from 'react';
+
+export const dynamic = 'force-dynamic';
 
 export const metadata = { title: 'Autonomous follow-ups' };
 
 export default async function FollowUpsPage(): Promise<ReactNode> {
-  const rows = await getNotifications(30);
+  const rows = await orUnavailable(() => getNotifications(30), null);
+  if (!rows) return <NotConnected />;
 
   if (rows.length === 0) {
     return (
