@@ -126,9 +126,9 @@ export function DashboardSidebar(): ReactNode {
                     onClick={() => setOpen(false)}
                     aria-current={active ? 'page' : undefined}
                     title={item.hint}
-                    className={`flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors ${
+                    className={`flex items-center gap-3 rounded-2xl px-3 py-2.5 text-sm transition-colors ${
                       active
-                        ? 'bg-muted text-foreground font-medium'
+                        ? 'bg-card-secondary text-card-foreground font-medium'
                         : 'text-muted-foreground hover:text-foreground hover:bg-muted/60'
                     }`}
                   >
@@ -152,7 +152,7 @@ export function DashboardSidebar(): ReactNode {
         onClick={() => setOpen((v) => !v)}
         aria-expanded={open}
         aria-controls="dashboard-sidebar"
-        className="border-border bg-background text-foreground fixed top-4 left-4 z-50 flex items-center gap-2 rounded-lg border px-3 py-2 text-sm lg:hidden"
+        className="border-border bg-background text-foreground fixed top-4 left-4 z-50 flex items-center gap-2 rounded-2xl border px-4 py-2.5 text-sm lg:hidden"
       >
         {open ? (
           <X className="h-4 w-4" strokeWidth={1.5} aria-hidden="true" />

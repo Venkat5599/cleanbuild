@@ -40,18 +40,40 @@ export default async function OverviewPage(): Promise<ReactNode> {
         lede="Where the model stands, and what it did without being asked."
       />
 
-      <section className="border-border grid gap-px overflow-hidden rounded-xl border sm:grid-cols-2 lg:grid-cols-4">
-        {stats.map((s) => (
-          <div key={s.label} className="bg-background p-5">
-            <p className="text-muted-foreground font-mono text-xs">{s.label}</p>
-            <p className="text-foreground mt-2 font-mono text-3xl tabular-nums">{s.value}</p>
-            <p className="text-muted-foreground mt-1 text-xs">{s.hint}</p>
+      {/* Same card language as the landing page's bento, so walking from one
+          into the other does not feel like two products. */}
+      <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        {stats.map((s, i) => (
+          <div
+            key={s.label}
+            // The primary card's fill is light in both themes, so its text is
+            // pinned to ink rather than inheriting the theme foreground. The
+            // muted token is grey and was illegible on sage.
+            className={`rounded-4xl p-6 ${
+              i === 0 ? 'bg-card-primary text-[#131210]' : 'bg-card-secondary text-card-foreground'
+            }`}
+          >
+            <p
+              className={`font-mono text-xs ${
+                i === 0 ? 'text-[#131210]/70' : 'text-card-foreground-muted'
+              }`}
+            >
+              {s.label}
+            </p>
+            <p className="mt-3 font-mono text-4xl tabular-nums">{s.value}</p>
+            <p
+              className={`mt-2 text-xs ${
+                i === 0 ? 'text-[#131210]/70' : 'text-card-foreground-muted'
+              }`}
+            >
+              {s.hint}
+            </p>
           </div>
         ))}
       </section>
 
       <div className="mt-10 grid gap-10 lg:grid-cols-2">
-        <section>
+        <section className="bg-muted rounded-4xl p-7">
           <div className="mb-3 flex items-baseline justify-between">
             <h2 className="text-foreground font-medium">Most recent belief change</h2>
             <Link href="/dashboard/learned" className="text-muted-foreground hover:text-foreground text-xs">
@@ -74,7 +96,7 @@ export default async function OverviewPage(): Promise<ReactNode> {
           )}
         </section>
 
-        <section>
+        <section className="bg-muted rounded-4xl p-7">
           <div className="mb-3 flex items-baseline justify-between">
             <h2 className="text-foreground font-medium">Latest experiments</h2>
             <Link href="/dashboard/ledger" className="text-muted-foreground hover:text-foreground text-xs">

@@ -22,9 +22,9 @@ export function PageHead({
 
 export function Empty({ title, body }: { title: string; body: string }): ReactNode {
   return (
-    <div className="border-border text-muted-foreground border-l-2 py-3 pl-4">
-      <p className="text-foreground font-medium">{title}</p>
-      <p className="mt-1 max-w-[56ch] text-sm leading-relaxed">{body}</p>
+    <div className="bg-card-secondary text-card-foreground-muted rounded-4xl p-8">
+      <p className="text-card-foreground font-medium">{title}</p>
+      <p className="mt-2 max-w-[56ch] text-sm leading-relaxed">{body}</p>
     </div>
   );
 }
