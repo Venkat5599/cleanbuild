@@ -6,7 +6,24 @@
  * bundle carries the transport.
  */
 
+import snapshot from './snapshot.json';
+
 const API = process.env.RATCHET_API_URL ?? 'http://127.0.0.1:8787';
+
+/**
+ * Whether the pages are reading a live Worker or a captured snapshot.
+ *
+ * The snapshot is a real export of a verified run, not invented numbers, and
+ * every page that uses it says so. That distinction matters: a dashboard that
+ * silently shows stale data as if it were live is lying, while one that says
+ * "this is a snapshot from a specific date" is just honest about deployment.
+ */
+export const SNAPSHOT_CAPTURED_AT: string = (snapshot as { capturedAt: string }).capturedAt;
+
+export interface Source {
+  live: boolean;
+  capturedAt?: string;
+}
 
 /** The demo runs a single creator. Multi-tenant selection is post-jam work. */
 export const CREATOR_ID = 1;
@@ -59,6 +76,25 @@ export async function orUnavailable<T>(load: () => Promise<T>, fallback: T): Pro
   } catch (e) {
     if (e instanceof ApiUnavailableError) return fallback;
     throw e;
+  }
+}
+
+/**
+ * Read live if the Worker answers, otherwise fall back to the captured
+ * snapshot. Returns which one it got, so the page can label it.
+ */
+export async function liveOrSnapshot<T>(
+  load: () => Promise<T>,
+  key: keyof typeof snapshot,
+): Promise<{ data: T; source: Source }> {
+  try {
+    return { data: await load(), source: { live: true } };
+  } catch (e) {
+    if (!(e instanceof ApiUnavailableError)) throw e;
+    return {
+      data: snapshot[key] as T,
+      source: { live: false, capturedAt: SNAPSHOT_CAPTURED_AT },
+    };
   }
 }
 

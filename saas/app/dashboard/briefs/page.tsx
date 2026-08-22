@@ -1,6 +1,6 @@
 import { Empty, PageHead } from '@/components/page-head';
-import { getBriefs, orUnavailable } from '@/lib/ratchet';
-import { NotConnected } from '../not-connected';
+import { getBriefs, liveOrSnapshot } from '@/lib/ratchet';
+import { SourceBadge } from '@/components/source-badge';
 import type { ReactNode } from 'react';
 
 export const dynamic = 'force-dynamic';
@@ -15,8 +15,9 @@ export const metadata = { title: 'Briefs' };
  * which is the only way a belief that is wrong ever gets found out.
  */
 export default async function BriefsPage(): Promise<ReactNode> {
-  const briefs = await orUnavailable(() => getBriefs(20), null);
-  if (!briefs) return <NotConnected />;
+  const r = await liveOrSnapshot(() => getBriefs(20), 'briefs');
+  const briefs = r.data;
+  const source = r.source;
   const exploratory = briefs.filter((b) => b.isExploratory).length;
 
   return (
@@ -25,12 +26,16 @@ export default async function BriefsPage(): Promise<ReactNode> {
         title="What to make next"
         lede="Each brief is drawn from the model rather than from its current favourite, so the schedule keeps testing instead of converging on one answer too early."
         meta={
-          briefs.length > 0 ? (
-            <>
-              <span className="text-foreground tabular-nums">{exploratory}</span> of{' '}
-              <span className="text-foreground tabular-nums">{briefs.length}</span> exploratory
-            </>
-          ) : undefined
+          <>
+            <SourceBadge source={source} />
+            {briefs.length > 0 && (
+              <>
+                {' · '}
+                <span className="text-foreground tabular-nums">{exploratory}</span> of{' '}
+                <span className="text-foreground tabular-nums">{briefs.length}</span> exploratory
+              </>
+            )}
+          </>
         }
       />
 

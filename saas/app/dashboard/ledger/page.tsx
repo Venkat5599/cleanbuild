@@ -1,6 +1,6 @@
-import { getLedger, level, orUnavailable } from '@/lib/ratchet';
+import { getLedger, level, liveOrSnapshot } from '@/lib/ratchet';
 import { Empty, PageHead } from '@/components/page-head';
-import { NotConnected } from '../not-connected';
+import { SourceBadge } from '@/components/source-badge';
 import type { ReactNode } from 'react';
 
 export const dynamic = 'force-dynamic';
@@ -8,8 +8,9 @@ export const dynamic = 'force-dynamic';
 export const metadata = { title: 'Experiment ledger' };
 
 export default async function LedgerPage(): Promise<ReactNode> {
-  const rows = await orUnavailable(() => getLedger(100), null);
-  if (!rows) return <NotConnected />;
+  const r = await liveOrSnapshot(() => getLedger(100), 'ledger');
+  const rows = r.data;
+  const source = r.source;
 
   if (rows.length === 0) {
     return (
@@ -27,6 +28,7 @@ export default async function LedgerPage(): Promise<ReactNode> {
         lede="Every published post, the creative choices it made, and how far it landed from its own predicted baseline."
         meta={
           <>
+            <SourceBadge source={source} />{' · '}
             <span className="text-foreground tabular-nums">{rows.length}</span> shown
           </>
         }

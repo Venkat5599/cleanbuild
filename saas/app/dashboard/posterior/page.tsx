@@ -1,7 +1,7 @@
 import { IntervalField, type IntervalDatum } from '@/components/interval-field';
 import { PageHead } from '@/components/page-head';
-import { getPosterior, getSnapshotWeeks, getTimeTravel, orUnavailable } from '@/lib/ratchet';
-import { NotConnected } from '../not-connected';
+import { getPosterior, getSnapshotWeeks, getTimeTravel, liveOrSnapshot } from '@/lib/ratchet';
+import { SourceBadge } from '@/components/source-badge';
 import type { ReactNode } from 'react';
 
 export const dynamic = 'force-dynamic';
@@ -9,12 +9,11 @@ export const dynamic = 'force-dynamic';
 export const metadata = { title: 'Posterior' };
 
 export default async function PosteriorPage(): Promise<ReactNode> {
-  const base = await orUnavailable(
-    async () => ({ posterior: await getPosterior(), weeks: await getSnapshotWeeks() }),
-    null,
-  );
-  if (!base) return <NotConnected />;
-  const { posterior, weeks } = base;
+  const p = await liveOrSnapshot(getPosterior, 'posterior');
+  const wk = await liveOrSnapshot(getSnapshotWeeks, 'snapshotWeeks');
+  const posterior = p.data;
+  const weeks = wk.data;
+  const source = p.source;
 
   // Two genuinely different snapshots are required. With one week of history
   // the current posterior is shown alone rather than compared with itself,
@@ -60,6 +59,7 @@ export default async function PosteriorPage(): Promise<ReactNode> {
         lede="Every bar is a 95% credible interval, not an estimate. The width is the honest part: it is how much is still unknown."
         meta={
           <>
+            <SourceBadge source={source} />{' · '}
             <span className="text-foreground tabular-nums">{posterior.nObs}</span> closed
             experiments
           </>

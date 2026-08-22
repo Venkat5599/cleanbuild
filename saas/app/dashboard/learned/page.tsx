@@ -1,6 +1,6 @@
-import { getLearned, level, orUnavailable } from '@/lib/ratchet';
+import { getLearned, level, liveOrSnapshot } from '@/lib/ratchet';
 import { Empty, PageHead } from '@/components/page-head';
-import { NotConnected } from '../not-connected';
+import { SourceBadge } from '@/components/source-badge';
 import type { ReactNode } from 'react';
 
 export const dynamic = 'force-dynamic';
@@ -8,8 +8,9 @@ export const dynamic = 'force-dynamic';
 export const metadata = { title: 'What changed' };
 
 export default async function LearnedPage(): Promise<ReactNode> {
-  const rows = await orUnavailable(() => getLearned(30), null);
-  if (!rows) return <NotConnected />;
+  const r = await liveOrSnapshot(() => getLearned(30), 'learned');
+  const rows = r.data;
+  const source = r.source;
 
   if (rows.length === 0) {
     return (
@@ -23,6 +24,7 @@ export default async function LearnedPage(): Promise<ReactNode> {
   return (
     <main>
       <PageHead
+        meta={<SourceBadge source={source} />}
         title="What changed, and why"
         lede="Every belief change is recorded with the experiment that caused it. This is the audit trail: nothing moves without a result behind it."
       />

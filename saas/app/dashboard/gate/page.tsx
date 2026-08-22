@@ -1,6 +1,6 @@
 import { Empty, PageHead } from '@/components/page-head';
-import { getGateEvents, orUnavailable } from '@/lib/ratchet';
-import { NotConnected } from '../not-connected';
+import { getGateEvents, liveOrSnapshot } from '@/lib/ratchet';
+import { SourceBadge } from '@/components/source-badge';
 import type { ReactNode } from 'react';
 
 export const dynamic = 'force-dynamic';
@@ -14,12 +14,14 @@ const RULE_LABEL: Record<string, string> = {
 };
 
 export default async function GatePage(): Promise<ReactNode> {
-  const rows = await orUnavailable(() => getGateEvents(50), null);
-  if (!rows) return <NotConnected />;
+  const r = await liveOrSnapshot(() => getGateEvents(50), 'gateEvents');
+  const rows = r.data;
+  const source = r.source;
 
   return (
     <main>
       <PageHead
+        meta={<SourceBadge source={source} />}
         title="Canon gate"
         lede="Before a brief is surfaced it is checked against everything this creator has already said publicly, which hooks are still cooling down, and which formats the model has ruled out."
       />

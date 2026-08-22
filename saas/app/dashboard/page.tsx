@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { PageHead } from '@/components/page-head';
-import { getLearned, getLedger, getNotifications, getPosterior, orUnavailable } from '@/lib/ratchet';
-import { NotConnected } from './not-connected';
+import { getLearned, getLedger, getNotifications, getPosterior, liveOrSnapshot } from '@/lib/ratchet';
+import { SourceBadge } from '@/components/source-badge';
 import type { ReactNode } from 'react';
 
 export const dynamic = 'force-dynamic';
@@ -16,17 +16,15 @@ export const metadata = { title: 'Overview' };
  * say where the model stands and what it did last.
  */
 export default async function OverviewPage(): Promise<ReactNode> {
-  const data = await orUnavailable(
-    async () => ({
-      posterior: await getPosterior(),
-      ledger: await getLedger(5),
-      learned: await getLearned(3),
-      notifications: await getNotifications(3),
-    }),
-    null,
-  );
-  if (!data) return <NotConnected />;
-  const { posterior, ledger, learned, notifications } = data;
+  const p = await liveOrSnapshot(getPosterior, 'posterior');
+  const l = await liveOrSnapshot(() => getLedger(5), 'ledger');
+  const w = await liveOrSnapshot(() => getLearned(3), 'learned');
+  const n = await liveOrSnapshot(() => getNotifications(3), 'notifications');
+  const posterior = p.data;
+  const ledger = l.data.slice(0, 5);
+  const learned = w.data.slice(0, 3);
+  const notifications = n.data.slice(0, 3);
+  const source = p.source;
 
   const confident = posterior.marginals.filter(
     (m) => m.probPositive >= 0.9 || m.probPositive <= 0.1,
@@ -44,6 +42,7 @@ export default async function OverviewPage(): Promise<ReactNode> {
   return (
     <main>
       <PageHead
+        meta={<SourceBadge source={source} />}
         title="Overview"
         lede="Where the model stands, and what it did without being asked."
       />

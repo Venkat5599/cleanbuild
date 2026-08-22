@@ -1,6 +1,6 @@
-import { getNotifications, orUnavailable } from '@/lib/ratchet';
+import { getNotifications, liveOrSnapshot } from '@/lib/ratchet';
 import { Empty, PageHead } from '@/components/page-head';
-import { NotConnected } from '../not-connected';
+import { SourceBadge } from '@/components/source-badge';
 import type { ReactNode } from 'react';
 
 export const dynamic = 'force-dynamic';
@@ -8,8 +8,9 @@ export const dynamic = 'force-dynamic';
 export const metadata = { title: 'Autonomous follow-ups' };
 
 export default async function FollowUpsPage(): Promise<ReactNode> {
-  const rows = await orUnavailable(() => getNotifications(30), null);
-  if (!rows) return <NotConnected />;
+  const r = await liveOrSnapshot(() => getNotifications(30), 'notifications');
+  const rows = r.data;
+  const source = r.source;
 
   if (rows.length === 0) {
     return (
@@ -35,6 +36,7 @@ export default async function FollowUpsPage(): Promise<ReactNode> {
         lede="Composed by a scheduled job with nobody logged in. The message goes to the Mind, which decides how and when to reach the creator."
         meta={
           <>
+            <SourceBadge source={source} />{' · '}
             <span className="text-foreground tabular-nums">{delivered}</span> delivered ·{' '}
             <span className="text-foreground tabular-nums">{rows.length - delivered}</span>{' '}
             undelivered
