@@ -152,7 +152,7 @@ export function DashboardSidebar(): ReactNode {
         onClick={() => setOpen((v) => !v)}
         aria-expanded={open}
         aria-controls="dashboard-sidebar"
-        className="border-border bg-background text-foreground fixed top-4 left-4 z-50 flex items-center gap-2 rounded-2xl border px-4 py-2.5 text-sm lg:hidden"
+        className="border-border bg-background text-foreground fixed bottom-5 left-5 z-50 flex items-center gap-2 rounded-2xl border px-4 py-2.5 text-sm shadow-lg lg:hidden"
       >
         {open ? (
           <X className="h-4 w-4" strokeWidth={1.5} aria-hidden="true" />
@@ -164,17 +164,10 @@ export function DashboardSidebar(): ReactNode {
 
       <aside
         id="dashboard-sidebar"
-        className={`border-border bg-background fixed inset-y-0 left-0 z-40 w-64 shrink-0 overflow-y-auto border-r px-4 py-6 transition-transform lg:sticky lg:top-0 lg:h-[100dvh] lg:translate-x-0 ${
+        className={`bg-background fixed inset-y-0 left-0 z-40 w-64 shrink-0 overflow-y-auto px-4 pt-28 pb-6 transition-transform lg:sticky lg:top-0 lg:h-[100dvh] lg:translate-x-0 ${
           open ? 'translate-x-0' : '-translate-x-full'
         }`}
       >
-        <Link
-          href="/"
-          className="text-foreground mb-8 block px-3 font-mono text-sm tracking-[0.14em] transition-opacity hover:opacity-70"
-        >
-          RATCHET
-        </Link>
-
         {nav}
 
         <div className="border-border mt-8 border-t px-3 pt-5">
