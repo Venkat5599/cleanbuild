@@ -110,6 +110,8 @@ interface Options {
   handle: string;
   niche: string;
   dbPath: string;
+  /** Shift the whole window into the past, so no post lands inside the gate's cooldown horizon. */
+  endOffsetDays?: number;
 }
 
 function parseArgs(argv: string[]): Options {
@@ -140,8 +142,10 @@ export async function seed(db: Db, opts: Options) {
   });
 
   const totalPosts = opts.weeks * opts.postsPerWeek;
-  // The window ends "now" so the newest experiments are genuinely mature.
-  const endMs = Date.now();
+  // The window ends "now" so the newest experiments are genuinely mature —
+  // unless the caller shifts it (the demo ages the history out of the canon
+  // gate's cooldown window on purpose).
+  const endMs = Date.now() - (opts.endOffsetDays ?? 0) * 86_400_000;
   const startMs = endMs - opts.weeks * 7 * 86_400_000;
 
   let lastPublishedMs = startMs - 3 * 86_400_000;
