@@ -301,6 +301,12 @@ Effective shrinkage per creator is approximately `n / (n + sigma^2 / tau^2)`, su
 
 ## 9. Data model (Postgres / Neon)
 
+> **Implementation status (2026-08-26):** this section is the original spec.
+> The shipped build uses **Cloudflare D1** (SQLite) for the ledger with the
+> same Drizzle schema, one definition and two handles: `bun:sqlite` locally
+> and D1 in the Worker. See `ARCHITECTURE.md` for the shipped data layer.
+> Everything else in the PRD is as implemented unless noted.
+
 ```sql
 creators(id, handle, platform, niche, followers, created_at, tz, exploration_budget)
 posts(id, creator_id, platform_post_id, published_at, title, description, url, raw jsonb)
