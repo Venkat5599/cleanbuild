@@ -22,7 +22,7 @@ export default async function PosteriorPage(): Promise<ReactNode> {
   const last = weeks[weeks.length - 1];
   const travel =
     first !== undefined && last !== undefined && first !== last
-      ? await getTimeTravel(first, last)
+      ? (await liveOrSnapshot(() => getTimeTravel(first, last), 'timeTravel')).data
       : null;
 
   // Ranked by effect size, not confidence: a large uncertain effect is exactly

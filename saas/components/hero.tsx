@@ -1,10 +1,12 @@
 "use client";
 
-import { LogoLoop, type LogoItem } from "@/components/logo-loop";
 import { ArrowDownRight } from "lucide-react";
 import { motion, useMotionValue, useSpring } from "motion/react";
 import Image from "next/image";
 import { useRef, type ReactNode, type MouseEvent } from "react";
+import snapshot from "@/lib/snapshot.json";
+
+const PICKS = (snapshot.posterior as { nObs: number }).nObs;
 
 const ease = [0.23, 1, 0.32, 1] as const;
 
@@ -17,17 +19,6 @@ const fadeInScale = {
   hidden: { opacity: 0, scale: 0.95, filter: "blur(8px)" },
   visible: { opacity: 1, scale: 1, filter: "blur(0px)" },
 };
-
-const logos: LogoItem[] = [
-  { node: <Image src="/mock-logos/acmecorp.svg" alt="Acme Corp" width={120} height={32} className="h-[1em] w-auto" /> },
-  { node: <Image src="/mock-logos/altshift.svg" alt="Altshift" width={120} height={32} className="h-[1em] w-auto" /> },
-  { node: <Image src="/mock-logos/biosynthesis.svg" alt="Biosynthesis" width={120} height={32} className="h-[1em] w-auto" /> },
-  { node: <Image src="/mock-logos/boltshift.svg" alt="Boltshift" width={120} height={32} className="h-[1em] w-auto" /> },
-  { node: <Image src="/mock-logos/capsule.svg" alt="Capsule" width={120} height={32} className="h-[1em] w-auto" /> },
-  { node: <Image src="/mock-logos/catalog.svg" alt="Catalog" width={120} height={32} className="h-[1em] w-auto" /> },
-  { node: <Image src="/mock-logos/cloudwatch.svg" alt="Cloudwatch" width={120} height={32} className="h-[1em] w-auto" /> },
-  { node: <Image src="/mock-logos/commandr.svg" alt="Commandr" width={120} height={32} className="h-[1em] w-auto" /> },
-];
 
 const PARALLAX_INTENSITY = 20;
 
@@ -92,7 +83,7 @@ export function Hero(): ReactNode {
             variants={fadeInUp}
             transition={{ duration: 0.8, ease }}
           >
-            203 experiments, one channel
+            {PICKS} experiments, one channel
             <span className="text-accent">✦</span>
           </motion.div>
 
@@ -149,24 +140,15 @@ export function Hero(): ReactNode {
             className="relative dark:mix-blend-darken rounded-2xl overflow-hidden border border-neutral-200 shadow-2xl/5 mask-[linear-gradient(to_bottom,black_50%,transparent_100%)] [-webkit-mask-image:linear-gradient(to_bottom,black_50%,transparent_100%)]"
           >
             <Image
-              src="/dashboardmock.png"
-              alt="The RATCHET dashboard: creative features plotted with 95% credible intervals"
+              src="/dashboard-real.png"
+              alt="The RATCHET dashboard: creative features plotted with 95% credible intervals, week 1 shown as ghosts behind the current week"
               width={1920}
-              height={1080}
-              className="w-full h-auto invert dark:invert-0 dark:contrast-100 contrast-125"
+              height={1500}
+              className="w-full h-auto"
               priority
             />
           </div>
         </div>
-      </motion.div>
-
-      <motion.div
-        className="pt-24 pb-12"
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ duration: 0.8, delay: 1, ease }}
-      >
-        <LogoLoop logos={logos} speed={60} logoHeight={42} gap={124} />
       </motion.div>
     </section>
   );

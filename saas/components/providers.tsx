@@ -2,20 +2,17 @@
 
 import { ReducedMotionProvider } from "@/lib/motion";
 import { SmoothScroll } from "@/components/smooth-scroll";
-import { ThemeProvider } from "next-themes";
 import type { ReactNode } from "react";
 
+/**
+ * App providers. RATCHET is a single dark theme (see the colour lock in the
+ * plan and `className="dark"` on <html>), so there is no theme provider to
+ * mount.
+ */
 export function Providers({ children }: { children: ReactNode }): ReactNode {
   return (
-    <ThemeProvider
-      attribute="class"
-      defaultTheme="system"
-      enableSystem
-      disableTransitionOnChange
-    >
-      <ReducedMotionProvider>
-        <SmoothScroll>{children}</SmoothScroll>
-      </ReducedMotionProvider>
-    </ThemeProvider>
+    <ReducedMotionProvider>
+      <SmoothScroll>{children}</SmoothScroll>
+    </ReducedMotionProvider>
   );
 }

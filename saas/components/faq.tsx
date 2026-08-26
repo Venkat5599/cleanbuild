@@ -111,7 +111,7 @@ export function FAQ(): ReactNode {
   };
 
   return (
-    <section className="w-full px-6 py-20 sm:py-28">
+    <section id="faq" className="w-full px-6 py-20 sm:py-28">
       <div className="mx-auto max-w-3xl">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -127,25 +127,25 @@ export function FAQ(): ReactNode {
             Everything you need to know
           </h2>
           <p className="mx-auto mt-4 max-w-xl text-base text-muted-foreground sm:text-lg">
-            Can&apos;t find the answer you&apos;re looking for? Reach out!
+            The honest version is on the page above and in the source.
           </p>
 
           <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
             <motion.a
-              href="#"
+              href="/dashboard"
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
               className="inline-flex items-center rounded-xl bg-foreground px-6 py-2.5 text-sm font-semibold text-background transition-colors hover:bg-foreground/90"
             >
-              Get Started
+              Open the dashboard
             </motion.a>
             <motion.a
-              href="#"
+              href="https://github.com/Venkat5599/cleanbuild"
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
               className="inline-flex items-center rounded-xl border border-border bg-frame px-6 py-2.5 text-sm font-semibold text-foreground transition-colors"
             >
-              Contact Support
+              Read the source
             </motion.a>
           </div>
         </motion.div>

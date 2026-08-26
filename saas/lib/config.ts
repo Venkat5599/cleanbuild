@@ -24,7 +24,7 @@ export const siteConfig = {
   nav: {
     cta: {
       text: 'Open the dashboard',
-      href: 'http://localhost:3000',
+      href: '/dashboard',
     },
     signIn: {
       text: 'Source',
@@ -46,7 +46,7 @@ export const heroConfig = {
     'Every post becomes a logged experiment. The result is collected days later, corrected for the things you do not control, and folded into a model of your audience that never resets.',
   cta: {
     text: 'See what it learned',
-    href: 'http://localhost:3000',
+    href: '/dashboard/posterior',
   },
 };
 
@@ -71,7 +71,7 @@ export const faqConfig = {
   cta: {
     primary: {
       text: 'Open the dashboard',
-      href: 'http://localhost:3000',
+      href: '/dashboard',
     },
     secondary: {
       text: 'Read the source',
@@ -113,5 +113,6 @@ export const features = {
 
 export const themeConfig = {
   defaultTheme: 'dark' as 'light' | 'dark' | 'system',
-  enableSystemTheme: true,
+  // Single dark theme by design (colour lock in the plan); no light variant.
+  enableSystemTheme: false,
 };

@@ -2,6 +2,7 @@
 
 import { motion } from 'motion/react';
 import type { ReactNode } from 'react';
+import snapshot from '@/lib/snapshot.json';
 
 /**
  * The proof section.
@@ -11,36 +12,57 @@ import type { ReactNode } from 'react';
  * page whose centrepiece is fabricated is worse than a page with no centrepiece.
  *
  * What is here instead is the real thing: the same credible-interval field the
- * product renders, drawn from an actual verified run. Every number below was
- * read out of the database after `scripts/verify-recovery.ts` passed. The grey
- * bars are what the agent believed after five experiments; the coloured bars
- * are what it believed after a hundred and ninety-four. The bars getting
- * shorter is the entire claim of the product, stated once, visually.
+ * product renders, drawn from an actual verified run. Every number comes from
+ * the pipeline's own weekly snapshots via lib/snapshot.json (the same labelled
+ * capture the dashboard falls back to) — after `scripts/verify-recovery.ts`
+ * passed. The grey bars are what the agent believed early; the coloured bars
+ * are what it believes now. The bars getting shorter is the entire claim of
+ * the product, stated once, visually.
  */
+
+interface TravelFeature {
+  name: string;
+  fromMean: number;
+  fromSd: number;
+  toMean: number;
+  toSd: number;
+}
+
+const travel = snapshot.timeTravel as {
+  fromWeek: number;
+  toWeek: number;
+  fromNObs: number;
+  toNObs: number;
+  features: TravelFeature[];
+} | null;
 
 interface Row {
   name: string;
   w1: { mean: number; sd: number };
-  w39: { mean: number; sd: number };
+  wN: { mean: number; sd: number };
 }
 
-/** Read from the running system, not invented. See the file comment above. */
-const ROWS: Row[] = [
-  { name: 'hook_type:question', w1: { mean: 0.0, sd: 0.5 }, w39: { mean: 0.224, sd: 0.252 } },
-  { name: 'topic_cluster:topic_3', w1: { mean: 0.0, sd: 0.5 }, w39: { mean: 0.189, sd: 0.248 } },
-  {
-    name: 'hook_type:story_cold_open',
-    w1: { mean: 0.186, sd: 0.47 },
-    w39: { mean: 0.185, sd: 0.245 },
-  },
-  { name: 'hook_type:claim', w1: { mean: 0.101, sd: 0.473 }, w39: { mean: -0.252, sd: 0.243 } },
-  { name: 'topic_cluster:topic_6', w1: { mean: 0.0, sd: 0.5 }, w39: { mean: -0.251, sd: 0.261 } },
-  {
-    name: 'thumbnail_archetype:object_hero',
-    w1: { mean: 0.0, sd: 0.5 },
-    w39: { mean: -0.298, sd: 0.254 },
-  },
-];
+/** Read from the labelled snapshot, not invented. See the file comment above. */
+const ROWS: Row[] = travel
+  ? [...travel.features]
+      .sort((a, b) => Math.abs(b.toMean) - Math.abs(a.toMean))
+      .slice(0, 6)
+      .map((f) => ({
+        name: f.name,
+        w1: { mean: f.fromMean, sd: f.fromSd },
+        wN: { mean: f.toMean, sd: f.toSd },
+      }))
+  : [];
+
+const FROM_N = travel?.fromNObs ?? 0;
+const TO_N = travel?.toNObs ?? 0;
+const FROM_WEEK = travel?.fromWeek ?? 1;
+const TO_WEEK = travel?.toWeek ?? 0;
+
+const avg = (rows: Row[], pick: (r: Row) => number) =>
+  rows.length === 0 ? 0 : rows.reduce((a, r) => a + pick(r), 0) / rows.length;
+const AVG_SD_W1 = avg(ROWS, (r) => r.w1.sd);
+const AVG_SD_WN = avg(ROWS, (r) => r.wN.sd);
 
 const DOMAIN = 1.2;
 const PLOT_W = 420;
@@ -68,19 +90,19 @@ export function Proof(): ReactNode {
               experiment narrows what it believes, and you can watch the uncertainty come down.
             </p>
             <p className="text-muted-foreground mt-4 leading-relaxed">
-              After five posts it knew almost nothing, and the bars said so. After a hundred and
-              ninety-four the same bars are half as wide. Nothing was retrained. The evidence simply
+              After {FROM_N} posts it knew almost nothing, and the bars said so. After {TO_N}
+              the same bars are half as wide. Nothing was retrained. The evidence simply
               accumulated, and it does not reset when you close the tab.
             </p>
 
             <dl className="border-border mt-8 grid grid-cols-2 gap-6 border-t pt-6">
               <div>
-                <dt className="text-muted-foreground font-mono text-xs">Uncertainty, week 1</dt>
-                <dd className="text-foreground mt-1 font-mono text-2xl tabular-nums">±0.98</dd>
+                <dt className="text-muted-foreground font-mono text-xs">Uncertainty, week {FROM_WEEK}</dt>
+                <dd className="text-foreground mt-1 font-mono text-2xl tabular-nums">±{AVG_SD_W1.toFixed(2)}</dd>
               </div>
               <div>
-                <dt className="text-muted-foreground font-mono text-xs">Uncertainty, week 39</dt>
-                <dd className="text-accent mt-1 font-mono text-2xl tabular-nums">±0.49</dd>
+                <dt className="text-muted-foreground font-mono text-xs">Uncertainty, week {TO_WEEK}</dt>
+                <dd className="text-accent mt-1 font-mono text-2xl tabular-nums">±{AVG_SD_WN.toFixed(2)}</dd>
               </div>
             </dl>
           </div>
@@ -88,15 +110,15 @@ export function Proof(): ReactNode {
           <motion.div
             initial={{ opacity: 1 }}
             className="overflow-x-auto"
-            aria-label="Credible intervals for six creative features, compared between week one and week thirty-nine"
+            aria-label="Credible intervals for six creative features, compared between week {FROM_WEEK} and week {TO_WEEK}"
           >
             <p className="text-muted-foreground mb-3 font-mono text-xs">
               <span className="mr-5 inline-flex items-center gap-2">
-                <span className="bg-border inline-block h-[3px] w-4" />5 experiments
+                <span className="bg-border inline-block h-[3px] w-4" />{FROM_N} experiments
               </span>
               <span className="inline-flex items-center gap-2">
                 <span className="bg-accent inline-block h-[3px] w-4" />
-                194 experiments
+                {TO_N} experiments
               </span>
             </p>
 
@@ -126,7 +148,7 @@ export function Proof(): ReactNode {
 
               {ROWS.map((r, i) => {
                 const y = i * ROW_H + 16;
-                const helps = r.w39.mean >= 0;
+                const helps = r.wN.mean >= 0;
                 return (
                   <g key={r.name}>
                     <text
@@ -149,10 +171,10 @@ export function Proof(): ReactNode {
                       strokeWidth={4}
                     />
 
-                    {/* Week 39: the same features, half the uncertainty. */}
+                    {/* Current week: the same features, half the uncertainty. */}
                     <line
-                      x1={LABEL_W + x(r.w39.mean - 1.96 * r.w39.sd)}
-                      x2={LABEL_W + x(r.w39.mean + 1.96 * r.w39.sd)}
+                      x1={LABEL_W + x(r.wN.mean - 1.96 * r.wN.sd)}
+                      x2={LABEL_W + x(r.wN.mean + 1.96 * r.wN.sd)}
                       y1={y + 5}
                       y2={y + 5}
                       stroke={helps ? 'var(--accent)' : 'var(--card-foreground-muted)'}
@@ -160,8 +182,8 @@ export function Proof(): ReactNode {
                       strokeWidth={4}
                     />
                     <line
-                      x1={LABEL_W + x(r.w39.mean)}
-                      x2={LABEL_W + x(r.w39.mean)}
+                      x1={LABEL_W + x(r.wN.mean)}
+                      x2={LABEL_W + x(r.wN.mean)}
                       y1={y}
                       y2={y + 10}
                       stroke={helps ? 'var(--accent)' : 'var(--card-foreground-muted)'}

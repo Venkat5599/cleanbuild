@@ -75,6 +75,7 @@ export function HowItWorks(): ReactNode {
 
   return (
     <section
+      id="how-it-works"
       ref={containerRef}
       className="relative w-full bg-background"
     >
@@ -89,7 +90,7 @@ export function HowItWorks(): ReactNode {
             whether to publish.
           </p>
           <motion.a
-            href="#"
+            href="https://github.com/Venkat5599/cleanbuild/blob/main/docs/ARCHITECTURE.md"
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
             className="mt-8 inline-flex items-center rounded-xl bg-foreground px-6 py-3 text-sm font-semibold text-background transition-colors hover:bg-foreground/90"

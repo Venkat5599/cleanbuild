@@ -1,27 +1,15 @@
 "use client";
 
 import { motion, type Transition } from "motion/react";
-import { CircleCheck, Star } from "lucide-react";
-import Image from "next/image";
+import { ArrowUpRight } from "lucide-react";
+import Link from "next/link";
 import type { ReactNode } from "react";
+import snapshot from "@/lib/snapshot.json";
 
 const EASE = [0.23, 1, 0.32, 1] as const;
 
-const AVATAR_URLS = [
-  "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&h=100&fit=crop&crop=face",
-  "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100&h=100&fit=crop&crop=face",
-  "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100&h=100&fit=crop&crop=face",
-  "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=100&h=100&fit=crop&crop=face",
-];
-
-/** Read from the running system, not invented. */
-const DEPLOYMENT_STATS = [
-  { icon: "", label: "203 experiments closed", change: "+6/wk" },
-  { icon: "", label: "uncertainty halved", change: "-50%" },
-];
-
 const cardAnimation = {
-  initial: { opacity: 0, y: 40 },
+  initial: { opacity: 0, y: 24 },
   whileInView: { opacity: 1, y: 0 },
   viewport: { once: true, margin: "-100px" },
 };
@@ -32,292 +20,223 @@ const getCardTransition = (delay = 0): Transition => ({
   delay,
 });
 
-function PhoneMockup({
+const NUM = "font-mono tabular-nums";
+
+/**
+ * The landing's product grid.
+ *
+ * Every number here is read from the labelled capture the dashboard also
+ * falls back to (lib/snapshot.json) — the same real pipeline output, never
+ * invented. The bento is a condensed version of the dashboard, not a
+ * marketing page: it shows the model state, the loop, and the record.
+ */
+function FeatureCard({
+  title,
+  body,
+  number,
+  tag,
+  delay = 0,
   children,
-  variant = "full",
+  href,
+  tone = "default",
 }: {
-  children: ReactNode;
-  variant?: "full" | "compact";
+  title: string;
+  body: string;
+  number?: string;
+  tag?: string;
+  delay?: number;
+  children?: ReactNode;
+  href?: string;
+  tone?: "default" | "primary";
 }): ReactNode {
-  const isCompact = variant === "compact";
-
-  return (
-    <div
-      className={`
-        relative bg-background shadow-2xl border-neutral-800 overflow-hidden z-10
-        ${isCompact 
-          ? "w-44 md:w-48 h-64 md:h-72 rounded-3xl border-4" 
-          : "w-56 md:w-64 h-96 md:h-115 rounded-t-4xl border-6 border-b-0"
-        }
-      `}
+  const inner = (
+    <motion.div
+      {...cardAnimation}
+      transition={getCardTransition(delay)}
+      className={`group relative flex h-full flex-col justify-between overflow-hidden rounded-4xl p-7 ${
+        tone === "primary"
+          ? "bg-card-primary text-[#131210]"
+          : "bg-card-secondary text-card-foreground"
+      }`}
     >
-      <div
-        className={`
-          absolute left-1/2 -translate-x-1/2 bg-neutral-800 rounded-full z-10
-          ${isCompact ? "top-2 w-16 h-4" : "top-2 w-20 h-5"}
-        `}
-        aria-hidden="true"
-      />
-      {children}
-    </div>
-  );
-}
-
-function AvatarStack(): ReactNode {
-  return (
-    <div className="flex items-center">
-      {AVATAR_URLS.map((src, i) => (
-        <div
-          key={i}
-          className="size-12 rounded-full border-2 border-white/25 overflow-hidden -ml-4 first:ml-0"
+      <div>
+        <div className="flex items-start justify-between gap-4">
+          <p
+            className={`font-mono text-xs ${
+              tone === "primary" ? "text-[#131210]/70" : "text-card-foreground-muted"
+            }`}
+          >
+            {tag ?? ""}
+          </p>
+          {href && (
+            <ArrowUpRight
+              className={`size-4 transition-transform duration-300 group-hover:-translate-y-0.5 group-hover:translate-x-0.5 ${
+                tone === "primary" ? "text-[#131210]/60" : "text-muted-foreground"
+              }`}
+            />
+          )}
+        </div>
+        <h3 className="mt-6 text-2xl font-medium leading-tight">{title}</h3>
+        <p
+          className={`mt-2 max-w-[36ch] text-sm ${
+            tone === "primary" ? "text-[#131210]/80" : "text-muted-foreground"
+          }`}
         >
-          <Image
-            src={src}
-            alt=""
-            width={48}
-            height={48}
-            className="size-full object-cover"
-          />
-        </div>
-      ))}
-      <div className="size-12 rounded-full border-2 border-white/25 bg-accent text-black flex items-center justify-center text-sm font-semibold -ml-4">
-        5+
-      </div>
-    </div>
-  );
-}
-
-function DeploymentStat({
-  icon,
-  label,
-  change,
-}: {
-  icon: string;
-  label: string;
-  change: string;
-}): ReactNode {
-  return (
-    <div className="flex items-center justify-between bg-background rounded-xl p-3">
-      <div className="flex items-center gap-2">
-        <span className="text-lg">{icon}</span>
-        <span className="text-foreground font-medium">{label}</span>
-      </div>
-      <span className="text-black text-sm font-medium">{change}</span>
-    </div>
-  );
-}
-
-function DecorativeCircles(): ReactNode {
-  return (
-    <div className="absolute inset-0 flex items-center justify-center" aria-hidden="true">
-      <div className="absolute size-56 border border-accent/80 rounded-full" />
-      <div className="absolute size-72 border border-accent/60 rounded-full" />
-      <div className="absolute size-88 border border-accent/40 rounded-full" />
-    </div>
-  );
-}
-
-function StepByStepCard(): ReactNode {
-  return (
-    <motion.div
-      {...cardAnimation}
-      transition={getCardTransition(0)}
-      className="group bg-card-primary rounded-4xl p-8 pb-0 overflow-hidden min-h-140 md:row-span-2 flex flex-col"
-    >
-      <div className="relative z-10 text-center mb-6 transition-transform duration-500 ease-out group-hover:scale-105">
-        <h3 className="text-2xl md:text-4xl font-medium text-neutral-900 leading-tight mb-3">
-          It Remembers What Worked
-        </h3>
-        <p className="text-neutral-700 text-sm">
-          Not what you said. Every closed experiment narrows what it believes about your audience
+          {body}
         </p>
       </div>
-
-      <div className="flex-1 flex justify-center items-end transition-transform duration-500 ease-out group-hover:scale-[1.02]">
-        <PhoneMockup variant="full">
-          <div className="absolute inset-0 bg-phone-screen pt-14 px-5">
-            <h4 className="text-3xl font-medium text-neutral-900 leading-none tracking-tight mt-4">
-              Your workspace
-            </h4>
-            <h4 className="text-3xl font-medium text-neutral-900 leading-none tracking-tight mb-4">
-              is ready!
-            </h4>
-            <p className="text-sm text-neutral-500 leading-snug mb-8">
-              Invite your team and start collaborating instantly.
-            </p>
-
-            {/* Project Card */}
-            <div className="relative bg-linear-to-br from-accent via-accent/80 to-accent/50 rounded-2xl p-4 h-52 shadow-xl overflow-hidden">
-              <ProjectCardContent />
-            </div>
-          </div>
-        </PhoneMockup>
-      </div>
+      {children}
+      {number && (
+        <p className={`${NUM} text-4xl leading-none`}>{number}</p>
+      )}
     </motion.div>
   );
+
+  if (!href) return inner;
+  return <Link href={href} className="block h-full">{inner}</Link>;
 }
 
-function ProjectCardContent(): ReactNode {
+/** Condensed interval field: the strongest effects with their 95% CIs. */
+function IntervalPreview(): ReactNode {
+  type Entry = {
+    name: string;
+    mean: number;
+    ciLow: number;
+    ciHigh: number;
+    probPositive: number;
+  };
+  const marginals = (snapshot.posterior.marginals as Entry[])
+    .slice()
+    .sort((a, b) => Math.abs(b.mean) - Math.abs(a.mean))
+    .slice(0, 6);
+  const domain = 1.4;
+
   return (
-    <>
-      <svg
-        className="absolute inset-0 size-full"
-        viewBox="0 0 100 60"
-        preserveAspectRatio="none"
-        aria-hidden="true"
-      >
-        <path
-          d="M0,60 Q30,40 60,50 T100,30"
-          fill="none"
-          stroke="rgba(255,255,255,0.15)"
-          strokeWidth="0.5"
-        />
-        <path
-          d="M0,55 Q40,35 70,45 T100,25"
-          fill="none"
-          stroke="rgba(255,255,255,0.1)"
-          strokeWidth="0.5"
-        />
-      </svg>
-
-      <div className="relative z-10 flex items-start justify-between gap-3 h-full">
-        <div>
-          <p className="text-base font-semibold text-neutral-900">Project</p>
-          <p className="text-base font-semibold text-neutral-900">Alpha</p>
-        </div>
-        <CircleCheck className="opacity-25 text-black" aria-hidden="true" />
-      </div>
-
-      <div className="absolute bottom-3 left-5 flex items-center gap-2 text-neutral-700 text-xs tracking-widest" aria-hidden="true">
-        <span>PRJ</span>
-        <span>•</span>
-        <span>2024</span>
-        <span>•</span>
-        <span>LIVE</span>
-      </div>
-    </>
-  );
-}
-
-function DashboardCard(): ReactNode {
-  return (
-    <motion.div
-      {...cardAnimation}
-      transition={getCardTransition(0.1)}
-      className="group bg-card-secondary rounded-4xl p-8 overflow-hidden min-h-80 relative flex flex-col md:block"
-    >
-      <div className="relative z-10 max-w-48 transition-transform duration-500 ease-out group-hover:scale-105">
-        <h3 className="text-xl md:text-2xl whitespace-nowrap font-medium text-card-foreground leading-tight mb-3">
-          Corrected Results
-        </h3>
-        <p className="text-card-foreground-muted text-sm">
-          Measured against what your channel was already expected to do, so growth is not mistaken for skill
-        </p>
-      </div>
-
-      <div className="relative md:absolute mt-8 md:mt-0 md:right-12 md:top-1/2 md:-translate-y-1/2 flex items-center justify-center transition-transform duration-500 ease-out group-hover:scale-105 self-center md:self-auto">
-        <DecorativeCircles />
-
-        <PhoneMockup variant="compact">
-          <div className="absolute inset-0 bg-phone-screen pt-9 px-3">
-            <div className="bg-white rounded-full px-2 py-1.5 mb-3 flex items-center gap-1.5 border border-neutral-200">
-              <span className="text-neutral-400 text-xs">Search projects...</span>
-            </div>
-            <p className="text-xs text-neutral-500 mb-0.5">Active projects</p>
-            <p className="text-xl font-medium text-neutral-900 mb-3">24 running</p>
-
-            <div className="flex gap-1.5 mb-4">
-              <span className="bg-accent text-black text-xs px-2.5 py-1 rounded-full">
-                Deploy
-              </span>
-              <span className="text-neutral-400 text-xs px-2 py-1">Build</span>
-              <span className="text-neutral-400 text-xs px-2 py-1">Test</span>
-            </div>
-          </div>
-        </PhoneMockup>
-
-        <div className="absolute bottom-0 left-1/2 -translate-x-1/2 bg-neutral-900 rounded-2xl px-5 py-3 shadow-xl z-20 whitespace-nowrap">
-          <div className="flex items-center gap-2 mb-0.5">
-            <span className="text-neutral-400 text-xs">Build status</span>
-            <span className="text-neutral-500 text-xs">ⓘ</span>
-          </div>
-          <div className="flex items-center gap-3">
-            <span className="text-lg font-medium text-white">All passing</span>
-            <span className="text-xs font-medium text-accent bg-accent/20 px-2 py-0.5 rounded">
-              ✓ 100%
+    <div className="mt-7 space-y-2.5">
+      {marginals.map((m) => {
+        const span = m.ciHigh - m.ciLow;
+        const left = ((m.ciLow + domain) / (2 * domain)) * 100;
+        const width = (span / (2 * domain)) * 100;
+        const pos = m.mean >= 0;
+        return (
+          <div key={m.name} className="flex items-center gap-3">
+            <span className="w-36 shrink-0 truncate text-xs text-muted-foreground">
+              {m.name.split(":")[1]}
             </span>
+            <div className="relative h-2 flex-1 rounded-full bg-muted">
+              <div
+                className="absolute top-1/2 h-full -translate-y-1/2 rounded-full"
+                style={{
+                  left: `${left}%`,
+                  width: `${Math.max(width, 1)}%`,
+                  background: pos ? "var(--accent)" : "var(--negative)",
+                  opacity: pos ? 0.85 : 0.85,
+                }}
+              />
+              <div
+                className="absolute top-1/2 h-3 w-px -translate-y-1/2 bg-foreground/60"
+                style={{ left: `${((m.mean + domain) / (2 * domain)) * 100}%` }}
+              />
+            </div>
           </div>
-        </div>
-      </div>
-    </motion.div>
-  );
-}
-
-function TrustedByCard(): ReactNode {
-  return (
-    <motion.div
-      {...cardAnimation}
-      transition={getCardTransition(0.2)}
-      className="group bg-card-secondary rounded-4xl p-6 md:p-8 flex flex-col items-center justify-center text-center min-h-64"
-    >
-      <div className="transition-transform duration-500 ease-out group-hover:scale-110">
-        <h3 className="text-2xl md:text-3xl font-medium text-card-foreground leading-tight mb-1">
-          Uncertainty
-        </h3>
-        <h3 className="text-2xl md:text-3xl font-medium text-card-foreground leading-tight mb-5">
-          &plusmn;0.98 to &plusmn;0.49
-        </h3>
-      </div>
-
-      <div className="transition-transform duration-500 ease-out group-hover:scale-105">
-        <AvatarStack />
-      </div>
-
-      <div className="flex items-center gap-2 mt-5 text-card-foreground-muted transition-transform duration-500 ease-out group-hover:scale-105">
-        <Star className="size-4 fill-current" />
-        <span className="text-xs font-medium">4.9 from 48k+ reviews</span>
-      </div>
-    </motion.div>
-  );
-}
-
-function IntegrationsCard(): ReactNode {
-  return (
-    <motion.div
-      {...cardAnimation}
-      transition={getCardTransition(0.3)}
-      className="group bg-card-primary rounded-4xl p-6 md:p-8 flex flex-col min-h-64"
-    >
-      <div className="mb-auto transition-transform duration-500 ease-out group-hover:scale-105">
-        <h3 className="text-xl md:text-2xl font-medium text-neutral-900 leading-tight mb-2">
-          Runs Without You
-        </h3>
-        <p className="text-neutral-700 text-sm">
-          A scheduled job matures experiments and reports back with every browser closed
-        </p>
-      </div>
-
-      <div className="flex flex-col gap-2 mt-6 transition-transform duration-500 ease-out group-hover:scale-[1.02]">
-        {DEPLOYMENT_STATS.map((stat) => (
-          <DeploymentStat key={stat.icon} {...stat} />
-        ))}
-      </div>
-    </motion.div>
+        );
+      })}
+      <p className="pt-1 text-[11px] text-muted-foreground">
+        {snapshot.posterior.nObs} closed experiments · strongest effects, 95% credible intervals
+        (labelled snapshot, {new Date(snapshot.capturedAt as string).toISOString().slice(0, 10)})
+      </p>
+    </div>
   );
 }
 
 export function FeaturesBento(): ReactNode {
+  const p = snapshot.posterior as {
+    nObs: number;
+    shrinkageOwn: number;
+    marginals: Array<{ probPositive: number }>;
+  };
+  const confident = p.marginals.filter((m) => m.probPositive >= 0.9 || m.probPositive <= 0.1).length;
+  const ownPct = Math.round(p.shrinkageOwn * 100);
+  const briefs = snapshot.briefs as Array<{ status: string; headline: string }>;
+  const gate = snapshot.gateEvents as Array<{ verdict: string }>;
+  const blocks = gate.filter((g) => g.verdict === "block").length;
+  const proposed = briefs.filter((b) => b.status === "proposed").length;
+
   return (
     <section className="w-full px-6 mb-32 bg-background">
-      <div className="max-w-5xl mx-auto">
-        <div className="grid grid-cols-1 md:grid-cols-[1fr_1.5fr] gap-4">
-          <StepByStepCard />
-          <DashboardCard />
+      <div className="mx-auto max-w-6xl">
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <FeatureCard
+            tag="the model"
+            title="It remembers what worked"
+            body="Every closed experiment narrows what the model believes about this audience. The grey shows nothing — no neural net is hiding in here; the arithmetic is deterministic TypeScript."
+            tone="primary"
+            href="/dashboard/posterior"
+            delay={0}
+          >
+            <IntervalPreview />
+          </FeatureCard>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <TrustedByCard />
-            <IntegrationsCard />
-          </div>
+          <FeatureCard
+            tag="the loop"
+            title="Four steps, three unsupervised"
+            body="Publish. The post becomes an experiment with a feature vector. Metrics mature at 24h, 72h and 168h. The 168h close teaches. Nothing requires a browser."
+            number={String(p.nObs)}
+            href="/dashboard"
+            delay={0.05}
+          />
+
+          <FeatureCard
+            tag="the record"
+            title="A ledger, not a vibe"
+            body="Every post, its feature vector, and the reward after the confounds are removed. Rewards are residuals in standard deviations: mean 0, sd 1 by construction."
+            href="/dashboard/ledger"
+            delay={0.1}
+          />
+
+          <FeatureCard
+            tag="the memory"
+            title="Beliefs change out loud"
+            body="The next brief is drawn from the posterior, one draw per round, and the belief diff is written in plain language before anything is surfaced."
+            number={`${confident} settled`}
+            href="/dashboard/learned"
+            delay={0.05}
+          />
+
+          <FeatureCard
+            tag="the canon gate"
+            title="Drafts that contradict the record are blocked"
+            body="A draft that repeats a hook inside its cooldown, reuses a format the evidence ruled out, or overlaps something the creator already said is blocked with an explanation."
+            number={`${blocks} blocks on record`}
+            href="/dashboard/gate"
+            delay={0.1}
+          />
+
+          <FeatureCard
+            tag="the mix"
+            title="Your data, your prior"
+            body={`${ownPct}% of what the model believes comes from this creator's own history; the rest from the niche prior. The split is shown, never hidden.`}
+            number={`${ownPct}% own data`}
+            href="/dashboard/posterior"
+            delay={0.15}
+          />
+
+          <FeatureCard
+            tag="the act step"
+            title="What to make next"
+            body="Briefs are proposals, drawn with exploration: a capped share deliberately test high-variance corners, because a belief that is wrong only gets found out by trying."
+            number={`${proposed} proposed`}
+            href="/dashboard/briefs"
+            delay={0.15}
+          />
+
+          <FeatureCard
+            tag="the follow-up"
+            title="It interrupts only when it matters"
+            body="A belief crossing 90% confidence, a trusted belief reversing, or an unusually large move — one proactive message per day at most, composed from the materiality verdict."
+            href="/dashboard/follow-ups"
+            delay={0.2}
+          />
         </div>
       </div>
     </section>
