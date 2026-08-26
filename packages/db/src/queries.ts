@@ -241,6 +241,26 @@ export async function upsertMetrics(
     });
 }
 
+/**
+ * Read the immutable feature labels of one post. Immutable per
+ * schema_version, so this is a lookup, never a relabel.
+ */
+export async function getFeatureLabels(
+  db: Db,
+  postId: number,
+): Promise<FeatureLabels | null> {
+  const [row] = await db.select().from(features).where(eq(features.postId, postId)).limit(1);
+  if (!row) return null;
+  return {
+    hookType: row.hookType as FeatureLabels['hookType'],
+    lengthBucket: row.lengthBucket as FeatureLabels['lengthBucket'],
+    thumbnailArchetype: row.thumbnailArchetype as FeatureLabels['thumbnailArchetype'],
+    publishSlot: row.publishSlot as FeatureLabels['publishSlot'],
+    format: row.format as FeatureLabels['format'],
+    topicCluster: row.topicCluster,
+  };
+}
+
 export async function getMetric(db: Db, postId: number, checkpoint: Checkpoint) {
   const rows = await db
     .select()
