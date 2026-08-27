@@ -5,7 +5,7 @@
 **An autonomous audience-growth agent. Every post is an experiment; the agent collects the result days later, corrects it for what you do not control, and folds it into a model of your audience that never resets.**
 
 [![Live](https://img.shields.io/badge/live-ratchet.pages.dev-7fa87a)](https://ratchet.pages.dev)
-[![Tests](https://img.shields.io/badge/tests-39%20passed-7fa87a)](https://github.com/Venkat5599/cleanbuild)
+[![Tests](https://img.shields.io/badge/tests-42%20passed-7fa87a)](https://github.com/Venkat5599/cleanbuild)
 [![License](https://img.shields.io/badge/license-MIT-7fa87a)](LICENSE)
 [![Stack](https://img.shields.io/badge/stack-Bun%20%C2%B7%20React%20%C2%B7%20TypeScript-ece7df)](https://github.com/Venkat5599/cleanbuild)
 
@@ -183,7 +183,7 @@ if (verdict.material) { await deps.minds.sendMessage(alias, composeMindBriefing(
 
 | Feature | Status | Detail |
 |---|---|---|
-| Learning pipeline (featurizer, baseline, reward, posterior, Thompson) | ✅ Real | Verified: planted-signal correlation 0.955, signs 4/5, drift ~1e-15, 39 tests |
+| Learning pipeline (featurizer, baseline, reward, posterior, Thompson) | ✅ Real | Verified: planted-signal correlation 0.955, signs 4/5, drift ~1e-15, 42 tests |
 | Autonomous acceptance test (`demo-timetravel.ts`) | ✅ Real | Runs end to end with no browser: maturation, materiality, notification, brief, gate block |
 | Act step + canon gate (briefs, gate log) | ✅ Real | Deterministic rules, every verdict persisted, 8 tests; contradiction uses token-set overlap, not embeddings |
 | Dashboard + landing | ✅ Real (site update pending deploy) | Landing live at ratchet.pages.dev; dashboard routes render locally from the labelled snapshot; live alias not yet re-deployed with them |
@@ -197,25 +197,25 @@ if (verdict.material) { await deps.minds.sendMessage(alias, composeMindBriefing(
 
 ## Tests
 
-39 tests, 0 failures:
+42 tests, 0 failures:
 
 ```
- 31 pass in packages/core (baseline, reward, posterior incl. signal recovery,
-                          Thompson, pooling)
-  8 pass in packages/pipeline (act round structure, one-draw invariant,
+ 31 pass in packages/core     (baseline, reward, posterior incl. signal recovery,
+                               Thompson, pooling)
+ 11 pass in packages/pipeline (act round structure, one-draw invariant,
                                dead_format / hook_cooldown / contradiction,
-                               determinism)
-Ran 39 tests across 3 files. [660ms]
+                               determinism, niche pooling)
+Ran 42 tests across 4 files.
 ```
 
 ```
 $ bun test
 ...
 
- 39 pass
+ 42 pass
   0 fail
-4460 expect() calls
-Ran 39 tests across 3 files. [660.00ms]
+4473 expect() calls
+Ran 42 tests across 4 files.
 ```
 
 The most important test is not in the suite: `scripts/verify-recovery.ts` runs the real pipeline over the seeded ledger and asserts the posterior recovers the planted ground truth (see *See it in one command*).
@@ -310,7 +310,7 @@ docs/                  PRD, ARCHITECTURE, TODO, CHECKLIST
 | Inference | pure TypeScript (ridge, Sherman–Morrison, Cholesky, Thompson) — no numeric inference in the LLM |
 | Agent | Minds Builder API (`X-Api-Key`), deterministic gate + briefing |
 | Observability | OpenTelemetry OTLP/HTTP, Prometheus text format, Upstash Redis |
-| Tests | bun:test (39 tests) |
+| Tests | bun:test (42 tests) |
 
 ## Roadmap
 
