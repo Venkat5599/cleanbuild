@@ -4,8 +4,14 @@
  * Deliberately a thin fetch wrapper rather than the official
  * `@animocabrands/minds-client-lib`: this runs inside a Cloudflare Worker,
  * where the dependency surface matters and the SSE/EventSource paths in the
- * official library are not needed. The types below are checked against the
- * library's shipped `.d.ts`, vendored at docs/minds-client-lib.d.ts.
+ * official library are not needed. The paths below were verified against the
+ * live API on 2026-08-27 (and against the library's own dist):
+ *
+ *   GET  /v1/humans/{humanId}/minds            list Minds on the account
+ *   POST /v1/messaging/conversation            { alias, mindId }
+ *   POST /v1/messaging/message                 { alias, messageText }
+ *   GET  /v1/messaging/histories/{alias}       transcript, newest last
+ *   GET  /v1/minds/{mindId}/cognition/usage    cognition balance
  *
  * What the Builder API is, and what it is NOT:
  *   IS   messaging to and from a Mind, plus skill/app equip and Bazaar catalog
@@ -20,6 +26,17 @@
 
 export const MINDS_API_BASE = 'https://api.build.hellominds.ai';
 export const MINDS_API_KEY_HEADER = 'X-Api-Key';
+
+/** The key is a JWT; the humanId claim is what Minds belong to. */
+export function parseHumanIdFromKey(apiKey: string): string | null {
+  try {
+    const payload = apiKey.split('.')[1];
+    const json = JSON.parse(atob(payload!.replace(/-/g, '+').replace(/_/g, '/')));
+    return typeof json.humanId === 'string' ? json.humanId : null;
+  } catch {
+    return null;
+  }
+}
 
 export class MindsApiError extends Error {
   constructor(
@@ -155,17 +172,18 @@ export class MindsClient {
   }
 
   listMinds(humanId?: string): Promise<BuilderMind[]> {
-    const q = humanId ? `?humanId=${encodeURIComponent(humanId)}` : '';
-    return this.request<BuilderMind[]>(`/v1/minds${q}`);
+    const id = humanId ?? parseHumanIdFromKey(this.apiKey);
+    if (!id) throw new Error('cannot determine humanId — pass it explicitly');
+    return this.request<BuilderMind[]>(`/v1/humans/${encodeURIComponent(id)}/minds`);
   }
 
   getMind(mindId: string): Promise<BuilderMind> {
     return this.request<BuilderMind>(`/v1/minds/${encodeURIComponent(mindId)}`);
   }
 
-  getCognitionBalance(mindId: string): Promise<CognitionBalance> {
+  getCognitionUsage(mindId: string): Promise<CognitionBalance> {
     return this.request<CognitionBalance>(
-      `/v1/minds/${encodeURIComponent(mindId)}/cognition/balance`,
+      `/v1/minds/${encodeURIComponent(mindId)}/cognition/usage`,
     );
   }
 
@@ -177,7 +195,7 @@ export class MindsClient {
    * decides how and whether to reach the creator.
    */
   sendMessage(alias: string, messageText: string): Promise<Record<string, unknown>> {
-    return this.request<Record<string, unknown>>('/v1/messaging/messages', {
+    return this.request<Record<string, unknown>>('/v1/messaging/message', {
       method: 'POST',
       body: { alias, messageText },
     });
@@ -191,7 +209,7 @@ export class MindsClient {
   }
 
   ensureConversation(alias: string, mindId: string): Promise<{ conversationId: string }> {
-    return this.request<{ conversationId: string }>('/v1/messaging/conversations', {
+    return this.request<{ conversationId: string }>('/v1/messaging/conversation', {
       method: 'POST',
       body: { alias, mindId },
     });
