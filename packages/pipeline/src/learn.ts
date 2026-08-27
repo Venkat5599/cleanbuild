@@ -18,6 +18,7 @@ import {
   DEFAULT_NOISE_VAR,
   FEATURE_DIM,
   beliefDiff,
+  empiricalBayes,
   fitBaseline,
   flatPrior,
   initFromPrior,
@@ -46,9 +47,11 @@ import {
   getNichePrior,
   getPosterior,
   insertBeliefDiff,
+  listCreators,
   listPosts,
   nextCheckpoint,
   putBaseline,
+  putNichePrior,
   putPosterior,
   putSnapshot,
   voidExperiment,
@@ -395,4 +398,52 @@ export function topFeatures(p: Posterior, n = 5) {
   return Array.from({ length: p.d }, (_, i) => marginal(p, i))
     .sort((a, b) => Math.abs(b.mean) - Math.abs(a.mean))
     .slice(0, n);
+}
+
+// --------------------------------------------------------------- pooling
+
+/**
+ * The nightly pooling job (FR-9 / PRD 8.4).
+ *
+ * For every niche with enough creators, estimate the niche prior from the
+ * per-creator posteriors (method-of-moments empirical Bayes in
+ * packages/core) and persist it to niche_priors. Every creator in the niche
+ * inherits it as their cold-start prior; as their own evidence accumulates,
+ * their posterior shrinks toward their own data and away from the pool.
+ * "Every creator sharpens the prior for the next one" is this function.
+ *
+ * Niches with fewer than MIN_CREATORS_FOR_POOLING creators keep their
+ * existing fallback prior (or the flat prior) and are reported honestly.
+ */
+export interface PoolOutcome {
+  niche: string;
+  creators: number;
+  pooled: boolean;
+  tau2: number;
+}
+
+export async function poolNiches(db: Db): Promise<PoolOutcome[]> {
+  const creators = await listCreators(db);
+  const byNiche = new Map<string, number[]>();
+  for (const c of creators) {
+    const ids = byNiche.get(c.niche) ?? [];
+    ids.push(c.id);
+    byNiche.set(c.niche, ids);
+  }
+
+  const outcomes: PoolOutcome[] = [];
+  for (const [niche, ids] of byNiche) {
+    const posteriors: Posterior[] = [];
+    for (const id of ids) {
+      const p = await getPosterior(db, id);
+      if (p) posteriors.push(p);
+    }
+    // Never downgrade an existing pooled prior to the flat one on a thin
+    // night: the last valid prior is the fallback.
+    const fallback = (await getNichePrior(db, niche))?.prior ?? flatPrior();
+    const result = empiricalBayes(posteriors, fallback, FEATURE_DIM);
+    await putNichePrior(db, niche, result.prior, result.nCreators, result.pooled);
+    outcomes.push({ niche, creators: result.nCreators, pooled: result.pooled, tau2: result.prior.tau2 });
+  }
+  return outcomes;
 }

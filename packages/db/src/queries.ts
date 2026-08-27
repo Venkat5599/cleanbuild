@@ -639,6 +639,14 @@ export async function insertClaim(
   return row!.id;
 }
 
+export async function setClaimEmbedding(
+  db: Db,
+  claimId: number,
+  embedding: Float64Array,
+) {
+  await db.update(claims).set({ embedding: toBlob(embedding) }).where(eq(claims.id, claimId));
+}
+
 export async function listClaims(db: Db, creatorId: number) {
   const rows = await db
     .select()

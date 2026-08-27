@@ -17,7 +17,13 @@ import { FEATURE_DIM } from './features.js';
 import type { Posterior, Prior } from './posterior.js';
 
 export const MIN_CREATORS_FOR_POOLING = 3;
-const TAU2_FLOOR = 1e-3;
+// The floor is a pseudo-count, not a positivity hack: it caps how much the
+// pool may dominate. tau2 = 1e-3 would give the niche prior 1000
+// pseudo-observations of weight, collapsing every creator onto the pool mean
+// the moment 3 creators exist. tau2 = 0.01 means at most ~100 pseudo-obs,
+// so a creator with a full history is always mostly their own data — the
+// personalisation property the estimator's own comment promises.
+const TAU2_FLOOR = 0.01;
 
 export interface PoolingResult {
   prior: Prior;

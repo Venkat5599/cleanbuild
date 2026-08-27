@@ -112,6 +112,10 @@ interface Options {
   dbPath: string;
   /** Shift the whole window into the past, so no post lands inside the gate's cooldown horizon. */
   endOffsetDays?: number;
+  /** Number of creators to seed (default 1). Extra creators exercise pooling. */
+  creators?: number;
+  /** Comma-separated niches cycled over the creators. */
+  niches?: string[];
 }
 
 function parseArgs(argv: string[]): Options {
@@ -126,141 +130,169 @@ function parseArgs(argv: string[]): Options {
     handle: get('--handle', 'demo-creator'),
     niche: get('--niche', 'making'),
     dbPath: get('--db', '.data/dev.db'),
+    creators: Number(get('--creators', '1')),
+    niches: get('--niches', 'making').split(',').map((s) => s.trim()),
   };
 }
 
 export async function seed(db: Db, opts: Options) {
-  const rng = createRng(opts.seed);
-  const theta = plantedTheta();
-
-  const creator = await upsertCreator(db, {
-    handle: opts.handle,
-    platform: 'csv',
-    niche: opts.niche,
-    followers: 12_000,
-    tz: 'Asia/Hong_Kong',
-  });
-
-  const totalPosts = opts.weeks * opts.postsPerWeek;
-  // The window ends "now" so the newest experiments are genuinely mature —
-  // unless the caller shifts it (the demo ages the history out of the canon
-  // gate's cooldown window on purpose).
-  const endMs = Date.now() - (opts.endOffsetDays ?? 0) * 86_400_000;
-  const startMs = endMs - opts.weeks * 7 * 86_400_000;
-
-  let lastPublishedMs = startMs - 3 * 86_400_000;
-  let followers = 12_000;
+  const baseRng = createRng(opts.seed);
+  const nCreators = Math.max(1, opts.creators ?? 1);
+  const niches = (opts.niches ?? [opts.niche]).filter(Boolean);
   let inserted = 0;
+  let firstCreatorId = 0;
 
-  for (let i = 0; i < totalPosts; i++) {
-    // Spread posts across the window with jitter, so day-of-week and gap
-    // actually vary — a perfectly regular cadence would make the confound
-    // model unidentifiable.
-    const nominal = startMs + ((i + 0.5) / totalPosts) * (endMs - startMs);
-    const jitterMs = (rng.next() - 0.5) * 1.6 * 86_400_000;
-    const publishedAt = new Date(nominal + jitterMs);
-    const hourJitter = 7 + Math.floor(rng.next() * 15);
-    publishedAt.setHours(hourJitter, Math.floor(rng.next() * 60), 0, 0);
-
-    const daysSinceLastPost = Math.max(
-      0.25,
-      (publishedAt.getTime() - lastPublishedMs) / 86_400_000,
-    );
-    lastPublishedMs = publishedAt.getTime();
-
-    // Channel growth across the window — the loudest confound of all.
-    followers = Math.round(12_000 * Math.exp(0.9 * ((publishedAt.getTime() - startMs) / (endMs - startMs))));
-
-    const duration = DURATIONS[Math.floor(rng.next() * DURATIONS.length)]!;
-    const hookType = HOOKS[Math.floor(rng.next() * HOOKS.length)]!;
-    const labels: FeatureLabels = {
-      hookType,
-      lengthBucket: lengthBucketOf(duration) as LengthBucket,
-      thumbnailArchetype: THUMBS[Math.floor(rng.next() * THUMBS.length)]!,
-      publishSlot: publishSlotOf(publishedAt),
-      format: FORMATS[Math.floor(rng.next() * FORMATS.length)]!,
-      topicCluster: Math.floor(rng.next() * 8),
-    };
-    const x = encode(labels);
-
-    // --- the generative model -------------------------------------------
-    // creative effect (what the posterior must recover)
-    let creative = 0;
-    for (let j = 0; j < x.length; j++) creative += theta[j]! * x[j]!;
-
-    // confounds (what the baseline must absorb)
-    const dow = publishedAt.getDay();
-    const weekendLift = dow === 0 || dow === 6 ? 0.22 : 0;
-    const gapPenalty = -0.06 * daysSinceLastPost;
-    const followerTerm = 0.85 * Math.log(followers);
-
-    const noiseSd = 0.55;
-    const logViews =
-      -3.6 + followerTerm + weekendLift + gapPenalty + creative * noiseSd + rng.normal() * noiseSd;
-    const views = Math.max(1, Math.round(Math.exp(logViews)));
-
-    const stem = TITLE_STEMS[hookType][Math.floor(rng.next() * TITLE_STEMS[hookType].length)]!;
-    const subject = SUBJECTS[Math.floor(rng.next() * SUBJECTS.length)]!;
-    const title = `${stem} ${subject}`;
-
-    const { id: postId } = await insertPost(db, {
-      creatorId: creator.id,
-      platformPostId: `seed-${i.toString().padStart(4, '0')}`,
-      publishedAt,
-      title,
-      description: `Seeded history post ${i + 1} of ${totalPosts}. Synthetic.`,
-      durationSeconds: duration,
-      followersAtPublish: followers,
-      raw: { synthetic: true, seed: opts.seed },
-    });
-
-    await insertFeatures(db, postId, FEATURE_SCHEMA_VERSION, labels, x, 'seed');
-
-    // Metrics at every checkpoint. Views accumulate: roughly 55% by 24h and
-    // 80% by 72h of the final 168h figure, which is the usual shape.
-    const experimentId = await openExperiment(db, postId, creator.id, publishedAt);
-    for (const checkpoint of CHECKPOINT_ORDER) {
-      const share = checkpoint === '24h' ? 0.55 : checkpoint === '72h' ? 0.8 : 1;
-      await upsertMetrics(
-        db,
-        postId,
-        checkpoint,
-        {
-          views: Math.round(views * share),
-          watchTime: Math.round(views * share * duration * 0.35),
-          comments: Math.round(views * share * 0.004),
-          likes: Math.round(views * share * 0.05),
-          followerDelta: Math.round(views * share * 0.002),
-        },
-        new Date(
-          publishedAt.getTime() +
-            (checkpoint === '24h' ? 24 : checkpoint === '72h' ? 72 : 168) * 3_600_000,
-        ),
-      );
+  for (let ci = 0; ci < nCreators; ci++) {
+    // Creator 0 replays the exact historical sequence (same rng, same theta)
+    // so every existing verification number is unchanged. Later creators are
+    // sub-seeded and carry documented per-creator variation — that spread is
+    // exactly what the niche pool estimates.
+    const rng = ci === 0 ? baseRng : createRng(opts.seed + ci * 7919 + 1);
+    const theta = plantedTheta();
+    if (ci > 0) {
+      for (const [dim, level] of PLANTED_EFFECTS) {
+        theta[featureIndex(dim, level)] = theta[featureIndex(dim, level)]! + rng.normal() * 0.12;
+      }
     }
 
-    // Experiments stay OPEN here. Rewards are computed by the maturation job
-    // from the baseline model, exactly as they are in production — seeding a
-    // reward directly would bypass the very pipeline this data exists to test.
-    void experimentId;
-    inserted++;
-  }
-
-  // A small canon so the gate has something real to check against.
-  const claimSeeds: Array<[string, number]> = [
-    ['I will never take a sponsorship from an AI writing tool.', 40],
-    ['Shooting in one take is the only way I work now.', 26],
-    ['I think 20 minute videos are dead for this channel.', 12],
-  ];
-  for (const [text, daysAgo] of claimSeeds) {
-    await insertClaim(db, {
-      creatorId: creator.id,
-      text,
-      statedAt: new Date(endMs - daysAgo * 86_400_000),
+    const niche = niches[ci % niches.length]!;
+    const handle = ci === 0 ? opts.handle : `${opts.handle}-${ci + 1}`;
+    const creator = await upsertCreator(db, {
+      handle,
+      platform: 'csv',
+      niche,
+      followers: Math.round(12_000 * (1 + ci * 0.4)),
+      tz: 'Asia/Hong_Kong',
     });
+    if (ci === 0) firstCreatorId = creator.id;
+
+    const totalPosts = opts.weeks * opts.postsPerWeek;
+    // The window ends "now" so the newest experiments are genuinely mature —
+    // unless the caller shifts it (the demo ages the history out of the canon
+    // gate's cooldown window on purpose).
+    const endMs = Date.now() - (opts.endOffsetDays ?? 0) * 86_400_000;
+    const startMs = endMs - opts.weeks * 7 * 86_400_000;
+
+    let lastPublishedMs = startMs - 3 * 86_400_000;
+    let followers = creator.followers;
+
+    for (let i = 0; i < totalPosts; i++) {
+      // Spread posts across the window with jitter, so day-of-week and gap
+      // actually vary — a perfectly regular cadence would make the confound
+      // model unidentifiable.
+      const nominal = startMs + ((i + 0.5) / totalPosts) * (endMs - startMs);
+      const jitterMs = (rng.next() - 0.5) * 1.6 * 86_400_000;
+      const publishedAt = new Date(nominal + jitterMs);
+      const hourJitter = 7 + Math.floor(rng.next() * 15);
+      publishedAt.setHours(hourJitter, Math.floor(rng.next() * 60), 0, 0);
+
+      const daysSinceLastPost = Math.max(
+        0.25,
+        (publishedAt.getTime() - lastPublishedMs) / 86_400_000,
+      );
+      lastPublishedMs = publishedAt.getTime();
+
+      // Channel growth across the window — the loudest confound of all.
+      followers = Math.round(
+        creator.followers * Math.exp(0.9 * ((publishedAt.getTime() - startMs) / (endMs - startMs))),
+      );
+
+      const duration = DURATIONS[Math.floor(rng.next() * DURATIONS.length)]!;
+      const hookType = HOOKS[Math.floor(rng.next() * HOOKS.length)]!;
+      const labels: FeatureLabels = {
+        hookType,
+        lengthBucket: lengthBucketOf(duration) as LengthBucket,
+        thumbnailArchetype: THUMBS[Math.floor(rng.next() * THUMBS.length)]!,
+        publishSlot: publishSlotOf(publishedAt),
+        format: FORMATS[Math.floor(rng.next() * FORMATS.length)]!,
+        topicCluster: Math.floor(rng.next() * 8),
+      };
+      const x = encode(labels);
+
+      // --- the generative model -------------------------------------------
+      // creative effect (what the posterior must recover)
+      let creative = 0;
+      for (let j = 0; j < x.length; j++) creative += theta[j]! * x[j]!;
+
+      // confounds (what the baseline must absorb)
+      const dow = publishedAt.getDay();
+      const weekendLift = dow === 0 || dow === 6 ? 0.22 : 0;
+      const gapPenalty = -0.06 * daysSinceLastPost;
+      const followerTerm = 0.85 * Math.log(followers);
+
+      const noiseSd = 0.55;
+      const logViews =
+        -3.6 + followerTerm + weekendLift + gapPenalty + creative * noiseSd + rng.normal() * noiseSd;
+      const views = Math.max(1, Math.round(Math.exp(logViews)));
+
+      const stem = TITLE_STEMS[hookType][Math.floor(rng.next() * TITLE_STEMS[hookType].length)]!;
+      const subject = SUBJECTS[Math.floor(rng.next() * SUBJECTS.length)]!;
+      const title = `${stem} ${subject}`;
+
+      const { id: postId } = await insertPost(db, {
+        creatorId: creator.id,
+        platformPostId: `seed-${ci}-${i.toString().padStart(4, '0')}`,
+        publishedAt,
+        title,
+        description: `Seeded history post ${i + 1} of ${totalPosts}. Synthetic.`,
+        durationSeconds: duration,
+        followersAtPublish: followers,
+        raw: { synthetic: true, seed: opts.seed, creator: ci },
+      });
+
+      await insertFeatures(db, postId, FEATURE_SCHEMA_VERSION, labels, x, 'seed');
+
+      // Metrics at every checkpoint. Views accumulate: roughly 55% by 24h and
+      // 80% by 72h of the final 168h figure, which is the usual shape.
+      const experimentId = await openExperiment(db, postId, creator.id, publishedAt);
+      for (const checkpoint of CHECKPOINT_ORDER) {
+        const share = checkpoint === '24h' ? 0.55 : checkpoint === '72h' ? 0.8 : 1;
+        await upsertMetrics(
+          db,
+          postId,
+          checkpoint,
+          {
+            views: Math.round(views * share),
+            watchTime: Math.round(views * share * duration * 0.35),
+            comments: Math.round(views * share * 0.004),
+            likes: Math.round(views * share * 0.05),
+            followerDelta: Math.round(views * share * 0.002),
+          },
+          new Date(
+            publishedAt.getTime() +
+              (checkpoint === '24h' ? 24 : checkpoint === '72h' ? 72 : 168) * 3_600_000,
+          ),
+        );
+      }
+
+      // Experiments stay OPEN here. Rewards are computed by the maturation job
+      // from the baseline model, exactly as they are in production — seeding a
+      // reward directly would bypass the very pipeline this data exists to test.
+      void experimentId;
+      inserted++;
+    }
+
+    // A small canon so the gate has something real to check against.
+    const claimSeeds: Array<[string, number]> = [
+      ['I will never take a sponsorship from an AI writing tool.', 40],
+      ['Shooting in one take is the only way I work now.', 26],
+      ['I think 20 minute videos are dead for this channel.', 12],
+    ];
+    for (const [text, daysAgo] of claimSeeds) {
+      await insertClaim(db, {
+        creatorId: creator.id,
+        text,
+        statedAt: new Date(endMs - daysAgo * 86_400_000),
+      });
+    }
   }
 
-  return { creatorId: creator.id, posts: inserted, weeks: opts.weeks };
+  return {
+    creatorId: firstCreatorId,
+    posts: inserted,
+    creators: nCreators,
+    weeks: opts.weeks,
+  };
 }
 
 if (import.meta.main) {

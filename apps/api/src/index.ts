@@ -15,7 +15,7 @@ import { cors } from 'hono/cors';
 import { RPCHandler } from '@orpc/server/fetch';
 import { fromD1, type Db } from '@ratchet/db';
 import { MindsClient } from '@ratchet/mind';
-import { refitCreator, systemClock } from '@ratchet/pipeline';
+import { refitCreator, systemClock, poolNiches } from '@ratchet/pipeline';
 import { listCreators } from '@ratchet/db';
 import {
   CRON_LOCK_KEY,
@@ -240,6 +240,19 @@ export default {
               );
               await metrics.setGauge('ratchet_posterior_drift', refit.drift);
               await metrics.setGauge('ratchet_closed_experiments', refit.nClosed);
+            }
+
+            // Then refresh the niche priors from the refit posteriors. A
+            // creator joining a niche sharpens the prior for every creator
+            // who follows — this is the network effect the product claims.
+            for (const o of await poolNiches(db)) {
+              obs.event('cron.pool', {
+                niche: o.niche,
+                creators: o.creators,
+                pooled: o.pooled,
+                tau2: o.tau2,
+              });
+              await metrics.setGauge('ratchet_pooled_niches', o.pooled ? 1 : 0);
             }
           }
         } catch (e) {
