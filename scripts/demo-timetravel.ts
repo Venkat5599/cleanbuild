@@ -27,7 +27,7 @@
  */
 
 import pino from 'pino';
-import { mkdir } from 'node:fs/promises';
+import { mkdir, rm } from 'node:fs/promises';
 import { Database } from 'bun:sqlite';
 import { drizzle } from 'drizzle-orm/bun-sqlite';
 import { migrate as drizzleMigrate } from 'drizzle-orm/bun-sqlite/migrator';
@@ -80,6 +80,13 @@ const DB_PATH = '.data/demo.db';
 // 0. Own database, own eight weeks of synthetic history.
 // ---------------------------------------------------------------------------
 await mkdir('.data', { recursive: true });
+// Every run of the acceptance test starts from an empty database. Otherwise a
+// prior run's demo-creator, its posts, and its rate-limited notifications leak
+// into this one and the hook cooldown / materiality gates fire on stale state
+// rather than on what actually happened during this run.
+for (const suffix of ['', '-wal', '-shm']) {
+  await rm(`${DB_PATH}${suffix}`, { force: true });
+}
 const sqlite = new Database(DB_PATH, { create: true });
 sqlite.exec('PRAGMA foreign_keys = ON');
 drizzleMigrate(drizzle(sqlite), {
