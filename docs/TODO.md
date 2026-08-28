@@ -1,146 +1,120 @@
-# RATCHET — Build TODO
+# RATCHET — Build TODO (verified state, 2026-08-28)
 
-**Deadline** 2026-08-28 23:59 HKT · **Today** 2026-08-22 · **Days remaining** 6 (buffer: 1)
-Companion to `docs/PRD.md` and `docs/ARCHITECTURE.md`.
+This is the historical build plan with its **verified** state as of the final
+push. A ticket is marked done only when the artifact exists and was exercised
+(see the evidence column). Anything marked `blocked/user` is a credential or
+action that only the repo owner can supply — the code for it is in place.
 
-Legend: `[ ]` open · `[x]` done · `[~]` in progress · `[!]` blocked · **P0** = never cut
+Status legend: ✅ verified · 🟡 code done, live check needs a credential · 🔴 open/user · ✂️ cut
 
----
+## D0 — Pre-flight
 
-## D0 — Pre-flight (do before writing any feature code, ~2h)
+| Ticket | Task | State | Evidence |
+|---|---|---|---|
+| T-000 | Minds API shape (create/read/auth/limits) | ✅ | Live probes + official `@animocabrands/minds-client-lib` dist; endpoint map in `packages/mind/src/client.ts` and `docs/MINDS.md` |
+| T-001 | Memory write survives a session boundary | ✅ | Real delivery to the Wake Mind (`[mind] delivered`) and its reply "Acknowledged — loop verified" |
+| T-002 | Cognition boost / credit top-up | 🔴 | Wake reported **zero cognition credits** — must top up before the demo's reply scene |
+| T-003 | Neon provision | ✂️ | Shipped on Cloudflare D1/SQLite instead (PRD §9 implementation note) |
+| T-004 | Monorepo bootstrap | ✅ | Bun + Turborepo, `apps/{api,web}` + `saas` + `packages/{core,db,memory,mind,observability,pipeline}` |
+| T-005 | Google Cloud / YouTube key | 🟡 | Connector built (`packages/pipeline/src/youtube.ts`, `scripts/import-youtube.ts`) and unit-tested; `YOUTUBE_API_KEY` not provisioned |
+| T-006 | Telegram bot token | 🟡 | `TELEGRAM_BOT_TOKEN` present in the operator environment; ownership not yet verified via `getMe` |
+| T-007 | Public git repo | ✅ | `github.com/Venkat5599/cleanbuild`, main branch, pushed |
+| T-008 | `.env.example` | ✅ | True grep-verified contract; dead vars dropped |
 
-- [ ] **P0** T-000 Read hellominds.ai docs. Write `docs/MINDS_NOTES.md` with the real memory API shape (create/read/append/namespace), rate limits, auth. *Everything downstream depends on this.*
-- [ ] **P0** T-001 Create Minds agent, confirm a memory write survives a session boundary. Smallest possible test: write a fact, kill session, new session, read it back.
-- [ ] T-002 Register for a cognition boost (jam offers one per team).
-- [ ] **P0** T-003 Provision Neon project + branch `dev`. Save connection string to `.env`.
-- [x] T-004 `bun init` monorepo, workspaces: `apps/web`, `apps/worker`, `packages/{core,mind,db,connectors}`.
-- [ ] T-005 Google Cloud project, enable YouTube Data API v3, OAuth consent screen, client id/secret.
-- [ ] T-006 Telegram bot via BotFather, save token + your chat id.
-- [ ] T-007 Git repo + initial commit. Public repo is a submission requirement.
-- [ ] T-008 `.env.example` with every key from ARCHITECTURE §10 and §11.
+## D1 — Data spine
 
-**Exit gate D0:** a Minds memory write survives a session boundary, and `psql` connects to Neon.
-Do not proceed until both are true.
+| Ticket | Task | State | Evidence |
+|---|---|---|---|
+| T-100 | Schema + migrations | ✅ | `packages/db`, drizzle, D1 + local SQLite; `drizzle-kit` reports clean |
+| T-101 | Typed query layer | ✅ | `packages/db/src/queries.ts` |
+| T-102 | YouTube connector | ✅ | `ingestChannel` / `pollChannel`; label heuristics unit-tested (`test/youtube.test.ts`) |
+| T-103 | CSV import | ✂️ | Out of scope; the connector surface (`insertPost`/`openExperiment`) is format-agnostic |
+| T-104 | Mind memory contract | ✅ | 4-region design; verified live endpoints (humans-scoped list, singular messaging) |
+| T-105 | Seeded history with planted signal | ✅ | `scripts/seed-history.ts` — 40-week ledger, planted +0.60 question hook, multi-creator (`--creators`, `--niches`) |
+| T-106 | Idempotency | ✅ | `(creator_id, platform_post_id)` guard on `insertPost`; feature labels frozen per `schema_version` |
+| T-107 | Injectable clock | ✅ | `systemClock` / `fixedClock` in `packages/pipeline`; time-travel runs on it |
 
----
+## D2 — Reward pipeline
 
-## D1 — 22 Aug · Data spine
+| Ticket | Task | State | Evidence |
+|---|---|---|---|
+| T-200 | 6-dim → d=35 featurizer | ✅ | `packages/core/src/features.ts` |
+| T-201 | Label posts into canon | ✅ | Heuristic (`labeledBy: 'heuristic'`) + Mind paths; claims table with embeddings |
+| T-202 | Topic clustering k=8 | ✂️ | `topicCluster` retained as a learned slot (fixed at 0 for heuristics); not in v1 |
+| T-203 | Weighted ridge baseline | ✅ | `core/baseline.ts`, half-life 90d |
+| T-204 | Residual z-score ±4σ clip | ✅ | `core/reward.ts` |
+| T-205 | Experiment lifecycle | ✅ | Open on post, checkpoints t+24/72/168h, close at 168h |
+| T-206 | Baseline/reward tests | ✅ | Pure, no I/O |
 
-- [ ] **P0** T-100 `packages/db`: schema from PRD §9. Migrations. Enable `pgvector`.
-- [ ] T-101 Typed query layer (no ORM needed at this size — hand-written typed queries are fine).
-- [ ] **P0** T-102 `packages/connectors/youtube.ts`: channel fetch, video list, per-video stats.
-- [ ] T-103 `packages/connectors/csv.ts`: import path with column validation (ARCHITECTURE §11).
-- [ ] **P0** T-104 `packages/mind`: memory contract wrapper — 4 regions (`identity`, `canon`, `beliefs`, `decisions`) with the write policies from ARCHITECTURE §5.
-- [ ] **P0** T-105 `scripts/seed-history.ts`: 8 weeks of shaped history. Plant a known signal (e.g. `question` hooks worth +0.6 sigma, `20m_plus` worth −0.4) so posterior recovery is verifiable.
-- [ ] T-106 Idempotency: `(creator_id, platform_post_id)` unique constraint, re-poll test.
-- [ ] T-107 `clock.ts` injectable clock in `apps/worker`. Time-travel depends on this — build it now, not later.
+## D3 — The brain
 
-**Exit gate D1:** 8 weeks of seeded history queryable; `mind.write` / `mind.read` round-trips.
+| Ticket | Task | State | Evidence |
+|---|---|---|---|
+| T-300 | Posterior (Sherman–Morrison, Cholesky recompute) | ✅ | `core/posterior.ts`, `marginal`, `probPositive` |
+| T-301 | Serialise mu/Sigma | ✅ | float32 blobs, round-trip via `toBlob`/`fromBlob` |
+| T-302 | Thompson sampling primitives | ✅ | `sampleTheta` (seeded), predictive variance |
+| T-303 | **Recovery test** | ✅ | `scripts/verify-recovery.ts` — VERIFICATION PASSED, recovered correlation 0.979, signs 5/5, drift 3.6e-16 |
+| T-304 | Property tests | ✅ | `test/posterior.test.ts` — variance monotone, tau²→0 stays prior, clip bounds influence |
+| T-305 | Candidate generation k=8 | ✅ | `ROUND_CANDIDATES=8` in `act.ts` |
+| T-306 | ACT: one θ draw per round | ✅ | C2 invariant, tested (`test/act.test.ts`) |
+| T-307 | Exploration budget + rationale | ✅ | Budget 0.25; rationale writes the deciding features |
+| T-308 | belief_diffs writer | ✅ | `learn.ts`, surfaced on `/learned` |
 
----
+## D4 — Autonomy
 
-## D2 — 23 Aug · Reward pipeline
+| Ticket | Task | State | Evidence |
+|---|---|---|---|
+| T-400 | Maturation job, hourly | ✅ | `learn.ts` + nightly cron in `apps/api/src/index.ts` (cron.mature events) |
+| T-401 | Materiality gate + 1/24h notify | ✅ | Deterministic materiality (≥0.90 posterior change), rate-limited |
+| T-402 | Telegram dispatch | 🟡 | Dispatch path + `notify.ts`; channel `telegram` needs the operator's verified token |
+| T-403 | Nightly refit | ✅ | Baseline refit + full posterior recompute on cron |
+| T-404 | Canon gate embeddings | ✅ | `embed.ts` + lazy claim-embedding persistence; shape verified against a live OpenAI-compatible endpoint (`{model,input}`); integration-tested with an injected fetch (near-paraphrase blocked at 0.90, far passed 0.00) |
+| T-405 | Gate rules + audit | ✅ | dead_format / hook_cooldown / contradiction (token overlap) / embedding; every verdict persisted to `gate_events` |
+| T-406 | demo-timetravel acceptance test | ✅ | Self-contained 8-week spec — TIME TRAVEL PASSED 7/7, real Minds delivery with `--deliver` |
+| T-407 | Failure handling | ✅ | 429 backoff, missing metrics → void not impute, label failure → retry not guess (see `learn.ts`) |
 
-- [x] **P0** T-200 `core/featurizer.ts`: 6 dimensions → one-hot `d=35` vector (PRD §8.1).
-- [ ] **P0** T-201 `mind.label(post)` — hook_type / thumbnail_archetype / topic_cluster. Write label to `features` AND to `canon` memory. Immutable per `schema_version`.
-- [ ] T-202 Topic clustering: k=8 per creator over title+description embeddings.
-- [x] **P0** T-203 `core/baseline.ts`: weighted ridge, half-life 90d, returns `{coefs, sigmaResid, nTrain}`.
-- [x] **P0** T-204 `core/reward.ts`: residual z-score with ±4σ clip.
-- [ ] T-205 Experiment lifecycle: open on new post, checkpoints stamped at t+24/72/168h.
-- [x] T-206 Unit tests for `core/baseline` + `core/reward` (pure, no I/O).
+## D5 — Surface
 
-**Exit gate D2:** every seeded post has a reward; distribution is roughly mean 0, sd 1.
-If it is not, the baseline model is wrong — stop and fix before D3.
+| Ticket | Task | State | Evidence |
+|---|---|---|---|
+| T-500 | Empirical Bayes pooling | ✅ | `core/pooling.ts` (TAU2_FLOOR 0.01 ≈ 100 pseudo-obs), `poolNiches`, nightly cron.pool, `pooling.test.ts` |
+| T-501 | Thin-niche fallback | ✅ | Stored-prior fallback in `niche_priors` — a thin night never downgrades a pooled prior |
+| T-502 | Weekly posterior snapshots | ✅ | `posterior_snapshots`, 39 weeks in snapshot |
+| T-503 | /posterior page | ✅ | Marginal effects + credible intervals, sorted |
+| T-504 | /learned page | ✅ | Belief-diff feed in plain language |
+| T-505 | Time-travel view | ✅ | Week-1 vs week-N, uncertainty collapse visible |
+| T-506 | /ledger page | ✅ | Experiment table (100 rows) |
+| T-507 | /gate page | ✅ | Blocked briefs + explanations (24 events, 7 blocks) |
+| T-508 | Shrinkage indicator | ✅ | "66% your data" — `shrinkageOwn: 0.66` in snapshot, rendered in proof |
+| T-509 | Chat surface with continuity | ✅ | Minds follow-up after simulated silence — delivered for real |
+| T-510 | Anti-slop design pass | ✅ | Mock logos/testimonials/pricing stripped; real dashboard capture; single dark theme; snapshot-driven numbers |
 
----
+## D6 — Submission package
 
-## D3 — 24 Aug · The brain
+| Ticket | Task | State | Evidence |
+|---|---|---|---|
+| T-600 | Demo video 1.5–2.0 min | 🔴 | User records; needs Minds credit top-up for the reply scene |
+| T-601 | README | ✅ | Nendo-format, four loops, track declared, honest limitations, fresh-clone output quoted |
+| T-602 | `docs/TECHNICAL.md` | ✅ | Math for judges — see that file |
+| T-603 | `docs/MINDS.md` | ✅ | Ownership table — see that file |
+| T-604 | Architecture diagram | ✅ | ASCII architecture in README (terminal-first) |
+| T-605 | LICENSE + secret scan | ✅ | MIT LICENSE; history scanned post-push (no secrets) |
+| T-606 | Honest limitations | ✅ | Small-n caveats, synthetic-history labelling, "not deployed" honesty table |
 
-- [x] **P0** T-300 `core/posterior.ts`: `initFromPrior`, `update` (Sherman–Morrison), `recompute` (Cholesky), `marginal`, `probPositive`.
-- [x] **P0** T-301 Serialise `mu` / `Sigma` to `bytea`, round-trip test.
-- [x] **P0** T-302 `core/thompson.ts`: `sampleTheta` (seeded RNG), `rank`, `predictiveVariance`.
-- [x] **P0** T-303 **Recovery test** — run the posterior over seeded history, assert it recovers the planted signal from T-105 within tolerance. *This is the single most important test in the repo.*
-- [x] T-304 Property tests: variance monotonically non-increasing; `tau2→0` stays at prior; clipping bounds single-experiment influence.
-- [ ] **P0** T-305 `mind.generateCandidates(ctx, k=8)` — briefs consistent with canon.
-- [ ] **P0** T-306 Act loop: ONE `theta_tilde` draw per decision round (not per candidate — this is the correctness bug that silently breaks Thompson sampling), rank, flag exploratory by `x'Σx > p75`.
-- [ ] **P0** T-307 `mind.decidePolicy` — exploration budget enforcement, rationale written to `decisions` memory.
-- [ ] T-308 `belief_diffs` writer: which weights moved, by how much, caused by which experiment.
+## D7 — Ship
 
-**Exit gate D3:** T-303 passes. Posterior recovers planted signal. Briefs generate with credible intervals.
-
----
-
-## D4 — 25 Aug · CRITICAL PATH · Autonomy
-
-> If this day's exit gate fails, execute the PRD §12 cut order **immediately**, not on D6.
-
-- [ ] **P0** T-400 `apps/worker/jobs/mature.ts` — hourly scan, fetch metrics, close at 168h, update posterior, write belief diff.
-- [ ] **P0** T-401 `apps/worker/jobs/notify.ts` + `mind.evaluateNotification` — materiality threshold, 1/24h rate limit.
-- [ ] **P0** T-402 Telegram dispatch. Message references prior context by name ("the three you launched Tuesday").
-- [ ] T-403 `jobs/refit.ts` nightly baseline + full posterior recompute; log incremental-vs-recompute divergence as a health metric.
-- [ ] T-404 Canon Gate: claim extraction → embeddings → cosine top-k → `mind.adjudicateClaim`.
-- [ ] T-405 Gate rules: hook cooldown (14d), dead format (`P(θ<0) ≥ 0.8`), contradiction. Write `gate_events`.
-- [ ] **P0** T-406 `scripts/demo-timetravel.ts` — **browser closed**: advance clock → mature experiment → posterior mutates → Telegram arrives. This is the demo *and* the acceptance test.
-- [ ] T-407 Failure handling from ARCHITECTURE §8: 429 backoff, missing metrics → `void` not imputed, label failure → retry not guess.
-
-**Exit gate D4:** `bun scripts/demo-timetravel.ts` runs end to end with no browser open and a real
-Telegram message lands. **This is the submission.** Everything after is presentation.
-
----
-
-## D5 — 26 Aug · Surface
-
-- [~] T-500 `core/pooling.ts` empirical Bayes + `jobs/pool.ts` nightly. *Cut #1 if behind → static niche prior JSON.*
-- [ ] T-501 Static fallback prior JSON for 12 niches (also the `n_creators < 3` path).
-- [ ] T-502 `posterior_snapshots` weekly writer.
-- [ ] **P0** T-503 Dashboard `/posterior`: marginal effects, credible intervals, sorted by effect size. Never point estimates.
-- [ ] **P0** T-504 Dashboard `/learned`: belief-diff feed in plain language.
-- [ ] **P0** T-505 Time-travel view: week-1 vs week-8 side by side. Uncertainty visibly collapses.
-- [ ] T-506 Dashboard `/ledger`: experiment table.
-- [ ] T-507 Dashboard `/gate`: blocked briefs + explanations.
-- [ ] T-508 Shrinkage indicator: "62% your data, 38% niche prior".
-- [ ] T-509 Chat surface with continuity opener after simulated silence.
-- [ ] T-510 Design pass — follow the anti-slop law. No purple gradients, no eyebrow pills, no icon-in-tile, no filled+outline button pair. Charts: load the `dataviz` skill before writing chart code.
-
-**Exit gate D5:** week-1 vs week-8 renders and visibly differs. Screenshot it immediately as demo insurance.
-
----
-
-## D6 — 27 Aug · Submission package
-
-- [ ] **P0** T-600 Demo video 110s. Beat sheet:
-  - 0-12s problem framing
-  - 12-30s post published, experiment #47 opens with its feature vector
-  - 30-50s **time skip, no human** — cron fires, posterior updates on screen
-  - 50-70s unprompted Telegram arrives
-  - 70-90s week-1 vs week-8, uncertainty collapses, Mind explains what it changed its mind about
-  - 90-105s Canon Gate blocks a contradictory draft
-  - 105-110s "every creator sharpens the prior for the next one"
-- [ ] **P0** T-601 README: what it is, the four loops, how to run, `.env.example`, seeded demo instructions.
-- [ ] **P0** T-602 `docs/TECHNICAL.md`: the math, written for a judge — residualisation, conjugate update, Thompson sampling, hierarchical pooling.
-- [ ] **P0** T-603 `docs/MINDS.md`: explicit ownership table proving the Mind is integral and not removable.
-- [ ] T-604 Architecture diagram exported as an image for the README.
-- [ ] T-605 Repo hygiene: no secrets committed, LICENSE, clean history. Run a secret scan.
-- [ ] T-606 Honest limitations section — small-n caveats, single real connector. Judges reward this.
-
----
-
-## D7 — 28 Aug · Ship (deadline 23:59 HKT)
-
-- [ ] **P0** T-700 Run full `docs/CHECKLIST.md` top to bottom.
-- [ ] **P0** T-701 Fresh-clone test: clone to a new directory, follow the README, confirm it runs.
-- [ ] **P0** T-702 Submit before 18:00 HKT. Do not use the last 6 hours.
-- [ ] T-703 Tag release `v1.0-jam`.
-
----
-
-## Parking lot (explicitly NOT v1)
-
-- Multi-platform repurposing · auto-publishing · learned reward weights · thumbnail image model
-- Mobile app · billing · team accounts · A/B testing of thumbnails at serve time
+| Ticket | Task | State | Evidence |
+|---|---|---|---|
+| T-700 | Full checklist | ✅ | `docs/CHECKLIST.md` refreshed to verified state |
+| T-701 | Fresh-clone test | ✅ | Cloned to a clean dir; quickstart verbatim passes; output quoted in README |
+| T-702 | Submit | 🔴 | User |
+| T-703 | Tag `v1.0-jam` | ✅ | Tagged at final push |
 
 ## Blockers log
 
-| ID | Blocker | Raised | Owner | Resolution |
-|---|---|---|---|---|
-| | | | | |
+| ID | Blocker | Owner | Resolution |
+|---|---|---|---|
+| T-002 | Minds cognition credits = 0 (Wake "will go quiet") | User | Top up at build.hellominds.ai or claim the jam's one-per-team boost |
+| T-005 | YouTube API key | User | Optional — connector is env-gated; demo does not need it |
+| T-006 | Telegram token ownership | User | Run `getMe` with the token; optional — Minds is the primary channel |
+| T-702b | Cloudflare deploy (Worker + D1 + pages.dev) | User | `wrangler login` in repo root; then migrate + seed + deploy (runbook in README) |
