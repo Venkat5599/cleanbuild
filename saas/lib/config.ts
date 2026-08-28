@@ -80,15 +80,6 @@ export const faqConfig = {
   },
 };
 
-export const footerConfig = {
-  cta: {
-    headline: 'Built for Creative Minds Jam #1',
-    placeholder: 'you@example.com',
-    button: 'Notify me',
-  },
-  copyright: `© ${new Date().getFullYear()} RATCHET. Audience Growth and Engagement track.`,
-};
-
 /**
  * ============================================================================
  * FEATURE FLAGS
@@ -97,7 +88,6 @@ export const footerConfig = {
 
 export const features = {
   smoothScroll: true,
-  testimonialAutoplay: false,
   parallaxHero: true,
   blurInHeadline: true,
 };
