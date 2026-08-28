@@ -50,11 +50,13 @@ import {
 import {
   confoundContexts,
   fitCreatorBaseline,
+  fixedClock,
+  generateBrief,
+  headlineOf,
   matureDueExperiments,
   refitCreator,
   systemClock,
 } from '@ratchet/pipeline';
-import { headlineOf, generateBrief } from '@ratchet/pipeline';
 import { MindsClient } from '@ratchet/mind';
 import { seed } from '../../../scripts/seed-history.js';
 import { fromFile } from '../../../packages/db/src/local.js';
@@ -125,16 +127,34 @@ export class Sandbox {
     return this.state();
   }
 
+  /** The simulated wall clock persists in the scratch ledger's bits table. */
+  private async clock(db: Db): Promise<Date> {
+    const client = (db as unknown as { $client: { query(s: string): { get(p: string): { description?: string } | null } } }).$client;
+    const row = client.query('SELECT description FROM bits WHERE name = ?').get('sandbox_clock');
+    if (row?.description) return new Date(Number(row.description));
+    const start = Date.now();
+    await this.setClock(db, start);
+    return new Date(start);
+  }
+
+  private async setClock(db: Db, ms: number): Promise<void> {
+    const client = (db as unknown as { $client: { query(s: string): { run(p: Array<string | number>): unknown } } }).$client;
+    client.query('DELETE FROM bits WHERE name = ?').run(['sandbox_clock']);
+    client
+      .query('INSERT INTO bits (creator_id, name, description, last_used_at) VALUES (1, ?, ?, ?)')
+      .run(['sandbox_clock', String(ms), ms]);
+  }
+
   async publish(labels: FeatureLabels): Promise<{ postId: number; experimentId: number; title: string }> {
     const db = await this.ensure();
     const creator = await getCreator(db, 1);
     if (!creator) throw new Error('sandbox creator missing — reset the sandbox');
-    const now = new Date();
+    const publishedAt = await this.clock(db);
     const title = headlineOf(labels).replace(/^Make a /, 'Sandbox: ');
     const { id: postId } = await insertPost(db, {
       creatorId: creator.id,
-      platformPostId: `sb-${now.getTime()}`,
-      publishedAt: now,
+      platformPostId: `sb-${publishedAt.getTime()}`,
+      publishedAt,
       title,
       description: 'Published in the interactive sandbox. Simulated ledger, real pipeline.',
       durationSeconds:
@@ -145,29 +165,30 @@ export class Sandbox {
       raw: { sandbox: true, simulated: true },
     });
     await insertFeatures(db, postId, FEATURE_SCHEMA_VERSION, labels, encode(labels), 'sandbox');
-    const experimentId = await openExperiment(db, postId, creator.id, now);
+    const experimentId = await openExperiment(db, postId, creator.id, publishedAt);
     return { postId, experimentId, title };
   }
 
   /**
-   * Simulate the next 24h of cron: write metric rows for every checkpoint
-   * that just came due (simulated views from the creator's fitted baseline,
-   * biased by the posterior's own predicted lift for those features), close
-   * experiments that reached 168h, then run the real follow-up.
+   * Simulate the next 24h of the cron: advance the sandbox wall clock by 24h,
+   * write metric rows for every checkpoint that just came due (simulated
+   * views from the creator's fitted baseline, biased by the posterior's own
+   * predicted lift), close experiments that reached 168h, then run the real
+   * follow-up. Seven presses = one week.
    */
   async advance(): Promise<SandboxState> {
     const db = await this.ensure();
     const creator = await getCreator(db, 1);
     if (!creator) return this.state();
 
-    const now = new Date();
+    const clockNow = await this.clock(db);
+    const simNow = new Date(clockNow.getTime() + CHECKPOINT_HOURS['24h'] * 3_600_000);
     const model = await fitCreatorBaseline(db, creator.id, systemClock);
     const posterior = await getPosterior(db, creator.id);
 
     for (const exp of await listExperiments(db, creator.id, 20)) {
       if (!['open', 'maturing'].includes(exp.status)) continue;
-      if (exp.nextCheckpointAt === null) continue;
-      if (exp.nextCheckpointAt > now.getTime() + CHECKPOINT_HOURS['24h'] * 3_600_000) continue;
+      if (exp.nextCheckpointAt === null || exp.nextCheckpointAt > simNow.getTime()) continue;
 
       const checkpoint = checkpointFor(exp.openedAt, exp.nextCheckpointAt);
       let targetSigma = 0;
@@ -209,7 +230,7 @@ export class Sandbox {
       );
     }
 
-    await matureDueExperiments(db, systemClock, 200);
+    await matureDueExperiments(db, fixedClock(simNow), 200);
     const minds =
       this.env.MINDS_BUILDER_API_KEY && this.env.MINDS_ALIAS
         ? new MindsClient({ apiKey: this.env.MINDS_BUILDER_API_KEY })
@@ -218,7 +239,15 @@ export class Sandbox {
       this.env.TELEGRAM_BOT_TOKEN && this.env.TELEGRAM_CHAT_ID
         ? { botToken: this.env.TELEGRAM_BOT_TOKEN, chatId: this.env.TELEGRAM_CHAT_ID }
         : null;
-    await runFollowUp({ db, minds, mindAlias: this.env.MINDS_ALIAS ?? null, telegram, log });
+    await runFollowUp({
+      db,
+      clock: fixedClock(simNow),
+      minds,
+      mindAlias: this.env.MINDS_ALIAS ?? null,
+      telegram,
+      log,
+    });
+    await this.setClock(db, simNow.getTime());
 
     // Propose one brief so the judge sees the act step react too.
     try {
@@ -234,13 +263,14 @@ export class Sandbox {
     const db = await this.ensure();
     const creator = await getCreator(db, 1);
     if (!creator) {
-      return { ready: false, experiments: [], notifications: [], posteriorN: 0 };
+      return { ready: false, experiments: [], notifications: [], posteriorN: 0, clock: null };
     }
     const posterior = await getPosterior(db, creator.id);
     const experiments = await listExperiments(db, creator.id, 20);
     const notifications = await listNotifications(db, 1, 5);
     return {
       ready: true,
+      clock: (await this.clock(db)).toISOString(),
       experiments: experiments.map((e) => ({
         id: e.id,
         postId: e.postId,
@@ -260,6 +290,7 @@ export class Sandbox {
 
 export interface SandboxState {
   ready: boolean;
+  clock: string | null;
   experiments: Array<{
     id: number;
     postId: number;
