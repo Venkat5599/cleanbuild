@@ -1,4 +1,5 @@
 import { IntervalField, type IntervalDatum } from '@/components/interval-field';
+import { PosteriorExplorer } from '@/components/posterior-explorer';
 import { PageHead } from '@/components/page-head';
 import { getPosterior, getSnapshotWeeks, getTimeTravel, liveOrSnapshot } from '@/lib/ratchet';
 import { SourceBadge } from '@/components/source-badge';
@@ -110,6 +111,10 @@ export default async function PosteriorPage(): Promise<ReactNode> {
           </div>
         )}
       </section>
+
+      <div className="mt-10">
+        <PosteriorExplorer data={data} weeks={weeks} />
+      </div>
     </main>
   );
 }

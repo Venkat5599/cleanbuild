@@ -1,3 +1,4 @@
+import Link from 'next/link';
 import { getLedger, level, liveOrSnapshot } from '@/lib/ratchet';
 import { Empty, PageHead } from '@/components/page-head';
 import { SourceBadge } from '@/components/source-badge';
@@ -46,11 +47,17 @@ export default async function LedgerPage(): Promise<ReactNode> {
           </thead>
           <tbody>
             {rows.map((r) => (
-              <tr key={r.experimentId} className="border-muted hover:bg-muted/50 border-b">
+              <tr key={r.experimentId} className="border-muted hover:bg-muted/50 border-b relative">
                 <td className="text-muted-foreground py-2 pr-4 font-mono text-xs whitespace-nowrap tabular-nums">
-                  {new Date(r.publishedAt).toISOString().slice(0, 10)}
+                  <Link href={`/dashboard/experiments/${r.experimentId}`}>
+                    #{r.experimentId} · {new Date(r.publishedAt).toISOString().slice(0, 10)}
+                  </Link>
                 </td>
-                <td className="text-foreground py-2 pr-4">{r.title}</td>
+                <td className="text-foreground py-2 pr-4 group-hover:underline">
+                  <Link href={`/dashboard/experiments/${r.experimentId}`} className="after:absolute after:inset-0 after:content-['']">
+                    {r.title}
+                  </Link>
+                </td>
                 <td className="text-muted-foreground py-2 pr-4 font-mono text-xs">
                   {r.features.map(level).join('  ')}
                 </td>

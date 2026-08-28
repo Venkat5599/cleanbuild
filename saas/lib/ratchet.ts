@@ -223,3 +223,136 @@ export const getCreators = () => rpc<CreatorRow[]>('creators', {});
 export function level(featureName: string): string {
   return featureName.split(':')[1] ?? featureName;
 }
+
+/* ------------------------------------------------------------------ */
+/* Operational console procedures (added for the interactive build).  */
+/* ------------------------------------------------------------------ */
+
+export interface OverviewView {
+  creator: {
+    handle: string;
+    platform: string;
+    niche: string;
+    followers: number;
+    explorationBudget: number;
+    cadence: number;
+  };
+  mind: {
+    posteriorVersion: number | null;
+    posteriorUpdatedAt: number | null;
+    lastMaturationAt: number | null;
+    lastGateAt: number | null;
+    lastNotificationAt: number | null;
+  };
+  learning: {
+    closedCount: number;
+    dim: number;
+    nObs: number;
+    strongestPositive: Marginal | null;
+    strongestNegative: Marginal | null;
+    avgUncertainty: number | null;
+    shrinkageOwn: number | null;
+  };
+  active: Array<{
+    id: number;
+    title: string;
+    status: string;
+    openedAt: number;
+    nextCheckpointAt: number | null;
+  }>;
+  recentChanges: Array<{
+    id: number;
+    createdAt: number;
+    experimentId: number | null;
+    summary: string;
+    deltas: BeliefDiffRow['deltas'];
+  }>;
+  nextAction: {
+    id: number;
+    headline: string;
+    predictedLift: number;
+    ciLow: number;
+    ciHigh: number;
+    isExploratory: boolean;
+    status: string;
+    createdAt: number;
+    rationale: string;
+  } | null;
+}
+
+export interface ExperimentDetailView {
+  experimentId: number;
+  postId: number;
+  status: string;
+  openedAt: number;
+  nextCheckpointAt: number | null;
+  closedAt: number | null;
+  reward: number | null;
+  rewardComponents: {
+    raw: number;
+    clipped: number;
+    wasClipped: boolean;
+    predictedLogViews: number;
+    actualLogViews: number;
+    sigmaResid: number;
+  } | null;
+  title: string;
+  publishedAt: number;
+  features: Record<string, string | number> | null;
+  confounds: {
+    followers: number;
+    daysSinceLastPost: number;
+    timeIndex: number;
+    publishedAt: string;
+  } | null;
+  checkpoints: Array<{
+    checkpoint: string;
+    views: number | null;
+    watchTime: number | null;
+    comments: number | null;
+    likes: number | null;
+    followerDelta: number | null;
+    collectedAt: number;
+  }>;
+  beliefDiffs: Array<{
+    id: number;
+    createdAt: number;
+    deltas: BeliefDiffRow['deltas'];
+    summary: string;
+  }>;
+}
+
+export interface FeatureExplainView {
+  feature: string;
+  marginal: Marginal | null;
+  supporting: Array<{ id: number; experimentId: number | null; createdAt: number; delta: number; summary: string }>;
+  against: Array<{ id: number; experimentId: number | null; createdAt: number; delta: number; summary: string }>;
+}
+
+export type ActivityEvent = Record<string, unknown> & {
+  type: string;
+  at: number;
+};
+
+export interface MemoryView {
+  claims: Array<{ id: number; postId: number | null; text: string; statedAt: number }>;
+  bits: Array<{ id: number; name: string; description: string; lastUsedAt: number | null }>;
+  briefs: Array<{ id: number; headline: string; status: string; isExploratory: boolean; createdAt: number }>;
+  notifications: Array<{ id: number; channel: string; body: string; sentAt: number | null; createdAt: number }>;
+  cadence: number;
+  learnedTop: Array<{ name: string; mean: number; sd: number; probPositive: number }>;
+}
+
+export const getOverview = () => rpc<OverviewView>('overview', { creatorId: CREATOR_ID });
+
+export const getExperimentDetail = (experimentId: number) =>
+  rpc<ExperimentDetailView>('experimentDetail', { creatorId: CREATOR_ID, experimentId });
+
+export const getFeatureExplain = (feature: string) =>
+  rpc<FeatureExplainView>('featureExplain', { creatorId: CREATOR_ID, feature });
+
+export const getActivity = (limit = 40) => rpc<ActivityEvent[]>('activity', { creatorId: CREATOR_ID, limit });
+
+export const getMemory = () => rpc<MemoryView>('memory', { creatorId: CREATOR_ID });
+
+export const getClaims = () => rpc<Array<{ id: number; postId: number | null; text: string; statedAt: number }>>('claims', { creatorId: CREATOR_ID });

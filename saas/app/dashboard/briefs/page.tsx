@@ -1,4 +1,5 @@
 import { Empty, PageHead } from '@/components/page-head';
+import { GenerateBriefsButton } from '@/components/generate-briefs';
 import { getBriefs, liveOrSnapshot } from '@/lib/ratchet';
 import { SourceBadge } from '@/components/source-badge';
 import type { ReactNode } from 'react';
@@ -35,6 +36,8 @@ export default async function BriefsPage(): Promise<ReactNode> {
                 <span className="text-foreground tabular-nums">{briefs.length}</span> exploratory
               </>
             )}
+            {' · '}
+            <GenerateBriefsButton />
           </>
         }
       />

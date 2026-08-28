@@ -5,12 +5,13 @@
  * or on bun:sqlite locally.
  */
 
-import { and, asc, desc, eq, inArray, isNotNull, lte, sql } from 'drizzle-orm';
+import { and, asc, desc, eq, gte, inArray, isNotNull, lte, sql } from 'drizzle-orm';
 import type { BaselineModel, FeatureLabels, Posterior, Prior } from '@ratchet/core';
 import { fromBlob, toBlob, type Db } from './client.js';
 import {
   baselines,
   beliefDiffs,
+  bits,
   briefs,
   claims,
   creators,
@@ -383,6 +384,7 @@ export interface ClosedExperiment {
   vector: Float64Array;
   publishedAt: number;
   title: string;
+  closedAt: number | null;
 }
 
 /** Training set for the nightly posterior recompute. */
@@ -398,6 +400,7 @@ export async function closedExperiments(
       vector: features.vector,
       publishedAt: posts.publishedAt,
       title: posts.title,
+      closedAt: experiments.closedAt,
     })
     .from(experiments)
     .innerJoin(features, eq(features.postId, experiments.postId))
@@ -412,6 +415,7 @@ export async function closedExperiments(
     vector: fromBlob(r.vector as unknown as Uint8Array),
     publishedAt: r.publishedAt,
     title: r.title,
+    closedAt: r.closedAt ?? null,
   }));
 }
 
@@ -515,6 +519,16 @@ export async function getPosterior(db: Db, creatorId: number): Promise<Posterior
     nObs: r.nObs,
     d: r.dim,
   };
+}
+
+/** Posterior metadata (version + last write) for status displays. */
+export async function getPosteriorMeta(db: Db, creatorId: number) {
+  const rows = await db
+    .select({ version: posteriors.version, updatedAt: posteriors.updatedAt })
+    .from(posteriors)
+    .where(eq(posteriors.creatorId, creatorId))
+    .limit(1);
+  return rows[0] ?? null;
 }
 
 export async function putSnapshot(db: Db, creatorId: number, week: number, p: Posterior) {
@@ -786,4 +800,81 @@ export async function listNotifications(db: Db, creatorId: number, limit = 20) {
     .where(eq(notifications.creatorId, creatorId))
     .orderBy(desc(notifications.createdAt))
     .limit(limit);
+}
+
+/** One experiment by id, with its post joined in. */
+export async function getExperimentById(db: Db, experimentId: number) {
+  const rows = await db
+    .select({
+      id: experiments.id,
+      postId: experiments.postId,
+      creatorId: experiments.creatorId,
+      status: experiments.status,
+      openedAt: experiments.openedAt,
+      nextCheckpointAt: experiments.nextCheckpointAt,
+      closedAt: experiments.closedAt,
+      reward: experiments.reward,
+      rewardComponents: experiments.rewardComponents,
+      title: posts.title,
+      publishedAt: posts.publishedAt,
+    })
+    .from(experiments)
+    .innerJoin(posts, eq(posts.id, experiments.postId))
+    .where(eq(experiments.id, experimentId))
+    .limit(1);
+  return rows[0] ?? null;
+}
+
+/** Raw metric rows for a post, one per checkpoint, oldest first. */
+export async function metricsForPost(db: Db, postId: number) {
+  return db.select().from(metrics).where(eq(metrics.postId, postId)).orderBy(asc(metrics.checkpoint));
+}
+
+/** Belief diffs caused by one experiment. */
+export async function beliefDiffsForExperiment(db: Db, experimentId: number) {
+  return db
+    .select()
+    .from(beliefDiffs)
+    .where(eq(beliefDiffs.experimentId, experimentId))
+    .orderBy(desc(beliefDiffs.createdAt))
+    .limit(20);
+}
+
+/** Open or maturing experiments for a creator, newest first. */
+export async function activeExperiments(db: Db, creatorId: number, limit = 10) {
+  return db
+    .select({
+      id: experiments.id,
+      postId: experiments.postId,
+      status: experiments.status,
+      openedAt: experiments.openedAt,
+      nextCheckpointAt: experiments.nextCheckpointAt,
+      title: posts.title,
+      publishedAt: posts.publishedAt,
+    })
+    .from(experiments)
+    .innerJoin(posts, eq(posts.id, experiments.postId))
+    .where(and(eq(experiments.creatorId, creatorId), inArray(experiments.status, ['open', 'maturing'])))
+    .orderBy(desc(experiments.openedAt))
+    .limit(limit);
+}
+
+/** Publishing cadence over the trailing 12 weeks, in posts per week. */
+export async function cadenceOf(db: Db, creatorId: number, now = Date.now()) {
+  const cutoff = now - 12 * 7 * 24 * 3_600_000;
+  const rows = await db
+    .select({ publishedAt: posts.publishedAt })
+    .from(posts)
+    .where(and(eq(posts.creatorId, creatorId), gte(posts.publishedAt, cutoff)));
+  return rows.length / 12;
+}
+
+/** Recurring bits for the creator (the canonical memory surface). */
+export async function listBits(db: Db, creatorId: number) {
+  return db.select().from(bits).where(eq(bits.creatorId, creatorId)).orderBy(desc(bits.lastUsedAt));
+}
+
+/** A creator override of a gate verdict. The event stays in the log; the override column is its truth. */
+export async function markGateEventOverridden(db: Db, eventId: number, overridden = true) {
+  await db.update(gateEvents).set({ overridden }).where(eq(gateEvents.id, eventId));
 }

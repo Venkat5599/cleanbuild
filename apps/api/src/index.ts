@@ -32,6 +32,8 @@ import { runFollowUp } from './followup.js';
 import { Sandbox } from './sandbox.js';
 import { router } from './router.js';
 import type { FeatureLabels } from '@ratchet/core';
+import { getPosterior, listClaims, markGateEventOverridden } from '@ratchet/db';
+import { CONTRADICTION_OVERLAP, generateBrief, overlap, tokens } from '@ratchet/pipeline';
 
 export interface Env {
   DB: D1Database;
@@ -193,6 +195,108 @@ app.post('/admin/run-followup', async (c) => {
     const s = sandboxOf(c);
     if (!s) return c.json({ error: 'sandbox not enabled on this deployment' }, 501);
     return c.json(await s.reset());
+  });
+
+  // ------------------------------------------------------------------
+  // The act step, run on demand. This is the SAME code the nightly cron
+  // runs: draw theta, rank candidates, gate the draft, persist the brief
+  // and its verdicts. The posterior itself is still written only by the
+  // maturation job — these actions never move a belief.
+  // ------------------------------------------------------------------
+  app.post('/briefs/generate', async (c) => {
+    const body = (await c.req.json().catch(() => null)) as { rounds?: unknown; seed?: unknown } | null;
+    const rounds = Math.min(5, Math.max(1, Number.isInteger(body?.rounds) ? (body!.rounds as number) : 3));
+    const seed = typeof body?.seed === 'number' ? body.seed : Math.floor(Math.random() * 1e6);
+    const db = getDb(c);
+    const out = [];
+    for (let i = 0; i < rounds; i++) {
+      const r = await generateBrief(db, 1, { seed: seed + i });
+      out.push({
+        briefId: r.briefId,
+        headline: r.headline,
+        stance: r.stance,
+        predictedLift: r.predictedLift,
+        ciLow: r.ciLow,
+        ciHigh: r.ciHigh,
+        isExploratory: r.isExploratory,
+        gateEvents: r.gateEvents,
+      });
+    }
+    return c.json({ generated: rounds, briefs: out });
+  });
+
+  /** Run the canon gate on a draft: full gated candidate when feature labels
+   *  are provided (persisted, audit trail), contradiction-only for free text
+   *  (evaluated live, not persisted). */
+  app.post('/gate/run', async (c) => {
+    const body = (await c.req.json().catch(() => null)) as {
+      headline?: unknown;
+      labels?: Record<string, unknown> | null;
+    } | null;
+    const headline = typeof body?.headline === 'string' ? body.headline.trim() : '';
+    if (headline.length < 4) {
+      return c.json({ error: 'paste a draft headline of at least 4 characters' }, 400);
+    }
+    const db = getDb(c);
+    const posterior = await getPosterior(db, 1);
+    if (!posterior) return c.json({ error: 'no posterior yet for this creator — run verification first' }, 409);
+
+    const labels = body?.labels && typeof body.labels === 'object' ? (body.labels as Record<string, unknown>) : null;
+    if (labels) {
+      for (const k of ['hookType', 'lengthBucket', 'thumbnailArchetype', 'publishSlot', 'format', 'topicCluster']) {
+        if (labels[k] === undefined) return c.json({ error: `missing label ${k}` }, 400);
+      }
+      const r = await generateBrief(db, 1, {
+        seed: Math.floor(Math.random() * 1e6),
+        labels: labels as unknown as FeatureLabels,
+        headlineOverride: headline,
+      });
+      return c.json({
+        persisted: true,
+        verdict: r.stance === 'blocked' ? 'BLOCK' : 'PASS',
+        stance: r.stance,
+        predictedLift: r.predictedLift,
+        ciLow: r.ciLow,
+        ciHigh: r.ciHigh,
+        gateEvents: r.gateEvents,
+        note: 'scored by a fresh posterior draw and checked by every gate rule; the brief and its verdicts are in the ledger.',
+      });
+    }
+
+    // Free-text draft: the contradiction rule operates on text alone.
+    const claims = await listClaims(db, 1);
+    let clash: (typeof claims)[number] | null = null;
+    let best = 0;
+    for (const claim of claims) {
+      const o = overlap(tokens(headline), tokens(claim.text));
+      if (o > best) {
+        best = o;
+        clash = claim;
+      }
+    }
+    const blocked = clash !== null && best >= CONTRADICTION_OVERLAP;
+    return c.json({
+      persisted: false,
+      verdict: blocked ? 'BLOCK' : 'PASS',
+      rule: 'contradiction',
+      overlap: Math.round(best * 100) / 100,
+      sourceClaim: blocked && clash ? { id: clash.id, text: clash.text, statedAt: clash.statedAt } : null,
+      explanation: blocked && clash
+        ? `draft overlaps the recorded stance "${clash.text}" (token overlap ${(best * 100).toFixed(0)}% ≥ ${(CONTRADICTION_OVERLAP * 100).toFixed(0)}%).`
+        : 'no conflict with the recorded canon.',
+      note: 'A free-text draft is checked by the contradiction rule only — hook-cooldown and dead-format rules need a feature vector. Pick feature chips (or run Generate briefs) for the full gate, which persists to the ledger.',
+    });
+  });
+
+  /** Creator override of a gate verdict: stays in the log, marked as overridden. */
+  app.post('/gate/override', async (c) => {
+    const body = (await c.req.json().catch(() => null)) as { eventId?: unknown } | null;
+    const eventId = Number(body?.eventId);
+    if (!Number.isInteger(eventId) || eventId <= 0) {
+      return c.json({ error: 'expected a gate event id' }, 400);
+    }
+    await markGateEventOverridden(getDb(c), eventId);
+    return c.json({ overridden: true, eventId });
   });
   return app;
 }

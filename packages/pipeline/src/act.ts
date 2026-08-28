@@ -216,7 +216,8 @@ const STOP_WORDS = new Set([
   'shown', 'lists', 'your', 'are', 'was', 'were', 'will', 'would',
 ]);
 
-function tokens(s: string): string[] {
+/** Tokenise a headline for the contradiction rule. Exported for the gate runner. */
+export function tokens(s: string): string[] {
   return s
     .toLowerCase()
     .replace(/[^a-z0-9 ]/g, ' ')
@@ -224,8 +225,8 @@ function tokens(s: string): string[] {
     .filter((w) => w.length > 2 && !STOP_WORDS.has(w));
 }
 
-/** Jaccard overlap between two token sets. */
-function overlap(a: string[], b: string[]): number {
+/** Jaccard overlap between two token sets. Exported for the canon-gate runner. */
+export function overlap(a: string[], b: string[]): number {
   if (a.length === 0 || b.length === 0) return 0;
   const sa = new Set(a);
   const sb = new Set(b);

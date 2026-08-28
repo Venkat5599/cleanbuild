@@ -6,10 +6,12 @@ import { useState, type ReactNode } from 'react';
 import {
   Activity,
   BellRing,
+  Brain,
   ChartNoAxesColumn,
   FileText,
   FlaskConical,
   Lightbulb,
+  ListOrdered,
   Menu,
   ShieldCheck,
   Sparkles,
@@ -101,6 +103,23 @@ const GROUPS: Group[] = [
         label: 'Canon gate',
         icon: ShieldCheck,
         hint: 'Drafts blocked before they shipped',
+      },
+      {
+        href: '/dashboard/activity',
+        label: 'Activity',
+        icon: ListOrdered,
+        hint: 'The autonomous audit trail',
+      },
+    ],
+  },
+  {
+    title: 'Mind',
+    items: [
+      {
+        href: '/dashboard/memory',
+        label: 'Mind memory',
+        icon: Brain,
+        hint: 'What the Mind remembers',
       },
     ],
   },
