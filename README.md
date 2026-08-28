@@ -4,16 +4,16 @@
 
 **An autonomous audience-growth agent. Every post is an experiment; the agent collects the result days later, corrects it for what you do not control, and folds it into a model of your audience that never resets.**
 
-[![Live](https://img.shields.io/badge/live-VPS-7fa87a)](http://187.127.137.136:8790)
+[![Live](https://img.shields.io/badge/live-ratchet.sslip.io-7fa87a)](https://ratchet.187.127.137.136.sslip.io)
 [![Tests](https://img.shields.io/badge/tests-78%20passed-7fa87a)](https://github.com/Venkat5599/cleanbuild)
 [![License](https://img.shields.io/badge/license-MIT-7fa87a)](LICENSE)
 [![Stack](https://img.shields.io/badge/stack-Bun%20%C2%B7%20React%20%C2%B7%20TypeScript-ece7df)](https://github.com/Venkat5599/cleanbuild)
 
 RATCHET is a persistent agent (a Minds agent holds its memory and its voice) whose core is a Bayesian bandit: every published post is logged as an experiment with a feature vector, its outcome is matured automatically at 24h/72h/168h, a confound-corrected residual reward is computed in deterministic TypeScript, and a per-creator posterior over creative features is updated. The next brief is drawn from the posterior by Thompson sampling, checked against the creator's canon by a deterministic gate, and surfaced only if it clears it. No numeric inference happens inside the LLM; the system closes its loop with no browser and no human.
 
-### ▶ Live at [http://187.127.137.136:8790](http://187.127.137.136:8790)
+### ▶ Live at [https://ratchet.187.127.137.136.sslip.io](https://ratchet.187.127.137.136.sslip.io)
 
-[Live demo ↗](http://187.127.137.136:8790) · [Repo ↗](https://github.com/Venkat5599/cleanbuild) · [Architecture ↓](#architecture) · [Run it locally ↓](#run-it-locally)
+[Live demo ↗](https://ratchet.187.127.137.136.sslip.io) · [Repo ↗](https://github.com/Venkat5599/cleanbuild) · [Architecture ↓](#architecture) · [Run it locally ↓](#run-it-locally)
 
 Built for **Creative Minds Jam #1** — Audience Growth & Engagement track. MIT licensed.
 
@@ -202,9 +202,9 @@ if (verdict.material) { await deps.minds.sendMessage(alias, composeMindBriefing(
 | Act step + canon gate (briefs, gate log) | ✅ Real | Deterministic rules, every verdict persisted, 8 act tests; contradiction = token-overlap (always on) + embedding cosine (when `EMBEDDING_*` set) |
 | Hierarchical pooling across creators | ✅ Real | Empirical Bayes, 3+ creators per niche; making niche pooled, own-data weight 0.66; nightly cron wired |
 | Minds agent integration | ✅ Real | Verified live: real briefing delivered to the Wake Mind (`[mind] delivered 2026-09-03T06:24Z`), it replied "Acknowledged — loop verified". Caveat: account has **zero cognition credits** — top up before recording the demo's reply scene |
-| Dashboard + landing | ✅ Live | API + dashboard deployed on the VPS (187.127.137.136:8787 / :8790); pages render the live ledger (the old ratchet.pages.dev build still serves the pre-dashboard landing) |
+| Dashboard + landing | ✅ Live | Named HTTPS: https://ratchet.187.127.137.136.sslip.io (Caddy + sslip.io, no DNS needed); pages render the live ledger (the old ratchet.pages.dev build still serves the pre-dashboard landing) |
 | YouTube connector | ✅ Code ready, needs key | `ingestChannel` / `pollChannel` with deterministic label heuristics (`labeledBy: 'heuristic'`), 24 tests; requires `YOUTUBE_API_KEY` to run |
-| Production Worker + cron | ✅ Deployed on VPS | `ratchet-api` (Hono on Bun, port 8787) + `ratchet-web` (Next, port 8790) under pm2; crontab runs hourly maturation + nightly refit/pool; the Cloudflare Worker path remains in the repo but is no longer required |
+| Production Worker + cron | ✅ Deployed on VPS | `ratchet-api` (Hono on Bun, :8787, https://ratchet-api.187.127.137.136.sslip.io) + `ratchet-web` (Next, :8790) under pm2; crontab runs hourly maturation + nightly refit/pool; the Cloudflare Worker path remains in the repo but is no longer required |
 | Telegram delivery | ✅ Verified live | Fallback channel; demo run delivered for real (`delivered: 'telegram'`, TIME TRAVEL PASSED 7/7) via @ratchet_alerts_bot on 2026-08-28 |
 | Embedding-based claim extraction | ❌ Not wired | Memory graph (`packages/memory`) exists; extraction needs the AICREDITS key and is not wired into the autonomous path (distinct from the gate's embedding rule, which is built) |
 
@@ -311,7 +311,12 @@ PORT=8790 RATCHET_API_URL=http://127.0.0.1:8787 pm2 start npm --name ratchet-web
 pm2 save
 ```
 
-Live: API at `:8787` (`/health`, `/rpc/*`), dashboard at `:8790`.
+Live: admin at `:8787` (`/health`, `/rpc/*`), dashboard at `:8790`. Named HTTPS via Caddy + sslip.io (no DNS needed):
+
+```
+ratchet.187.127.137.136.sslip.io { reverse_proxy localhost:8790 }
+ratchet-api.187.127.137.136.sslip.io { reverse_proxy localhost:8787 }
+```
 
 **Frontend** (`saas/`, deployed on Cloudflare Pages): set `RATCHET_API_URL` to the deployed worker, then `npm run build`. The dashboard runs on the live alias once pages.dev is pointed at the updated build.
 
@@ -358,7 +363,7 @@ Everything in v1 is in this repo; what remains needs credentials or the owner:
 
 - Minds cognition credits top-up, then the demo's wake-up scene via Minds (the fallback Telegram channel is already verified live, so the scene works either way).
 - A `YOUTUBE_API_KEY` to run the YouTube connector against a real channel.
-- A stable hostname/HTTPS for the VPS endpoints (they are plain HTTP on the box IP today); optionally point ratchet.pages.dev at the new build.
+- Optionally point ratchet.pages.dev at the new build (the old landing still serves there).
 - Claim extraction wiring (memory graph scripts need the AICREDITS key) — distinct from the gate's embedding rule, which is built.
 
 ## License
