@@ -135,8 +135,8 @@ export class RedisClient {
 }
 
 export function redisFromEnv(env: {
-  UPSTASH_REDIS_REST_URL?: string;
-  UPSTASH_REDIS_REST_TOKEN?: string;
+  UPSTASH_REDIS_REST_URL?: string | undefined;
+  UPSTASH_REDIS_REST_TOKEN?: string | undefined;
 }): RedisClient | null {
   if (!env.UPSTASH_REDIS_REST_URL || !env.UPSTASH_REDIS_REST_TOKEN) return null;
   return new RedisClient({

@@ -11,6 +11,7 @@
  */
 
 import { Hono } from 'hono';
+import type { Context } from 'hono';
 import { cors } from 'hono/cors';
 import { RPCHandler } from '@orpc/server/fetch';
 import { fromD1, type Db } from '@ratchet/db';
@@ -32,23 +33,23 @@ import { router } from './router.js';
 
 export interface Env {
   DB: D1Database;
-  MINDS_BUILDER_API_KEY?: string;
-  MINDS_ALIAS?: string;
-  TELEGRAM_BOT_TOKEN?: string;
-  TELEGRAM_CHAT_ID?: string;
+  MINDS_BUILDER_API_KEY?: string | undefined;
+  MINDS_ALIAS?: string | undefined;
+  TELEGRAM_BOT_TOKEN?: string | undefined;
+  TELEGRAM_CHAT_ID?: string | undefined;
   /** Comma-separated origins allowed to call the API. */
-  ALLOWED_ORIGINS?: string;
-  ENVIRONMENT?: string;
+  ALLOWED_ORIGINS?: string | undefined;
+  ENVIRONMENT?: string | undefined;
   /** Upstash Redis over HTTP. Workers cannot hold TCP Redis connections. */
-  UPSTASH_REDIS_REST_URL?: string;
-  UPSTASH_REDIS_REST_TOKEN?: string;
+  UPSTASH_REDIS_REST_URL?: string | undefined;
+  UPSTASH_REDIS_REST_TOKEN?: string | undefined;
   /** Cloudflare Analytics Engine binding, optional. */
   ANALYTICS?: AnalyticsEngineDataset;
   /** OTLP/HTTP trace collector. Any OTel-compatible backend. */
-  OTEL_EXPORTER_OTLP_ENDPOINT?: string;
-  OTEL_EXPORTER_OTLP_HEADERS?: string;
+  OTEL_EXPORTER_OTLP_ENDPOINT?: string | undefined;
+  OTEL_EXPORTER_OTLP_HEADERS?: string | undefined;
   /** Bearer token required to scrape /metrics. */
-  METRICS_TOKEN?: string;
+  METRICS_TOKEN?: string | undefined;
 }
 
 export interface RequestContext {
@@ -71,7 +72,16 @@ function log(event: string, data: Record<string, unknown> = {}): void {
   console.log(JSON.stringify({ event, at: new Date().toISOString(), ...data }));
 }
 
-const app = new Hono<{ Bindings: Env }>();
+/**
+ * Build the HTTP app with an injectable database handle.
+ *
+ * The Worker path passes `fromD1(c.env.DB)`; the standalone Bun path (see
+ * serve.bun.ts) passes a closure over a bun:sqlite file handle. Same app,
+ * same routes, same read-only oRPC contract — the deployment story differs,
+ * the product does not.
+ */
+export function buildApp(getDb: (c: Context<{ Bindings: Env }>) => Db): Hono<{ Bindings: Env }> {
+  const app = new Hono<{ Bindings: Env }>();
 
 app.use('*', async (c, next) => {
   const allowed = (c.env.ALLOWED_ORIGINS ?? '')
@@ -92,7 +102,7 @@ const rpc = new RPCHandler(router);
 app.use('/rpc/*', async (c, next) => {
   const { matched, response } = await rpc.handle(c.req.raw, {
     prefix: '/rpc',
-    context: { db: fromD1(c.env.DB), env: c.env } satisfies RequestContext,
+    context: { db: getDb(c), env: c.env } satisfies RequestContext,
   });
   if (matched) return c.newResponse(response.body, response);
   return next();
@@ -123,7 +133,7 @@ app.get('/metrics', async (c) => {
  */
 app.post('/admin/run-followup', async (c) => {
   const report = await runFollowUp({
-    db: fromD1(c.env.DB),
+    db: getDb(c),
     minds: mindsFor(c.env),
     mindAlias: c.env.MINDS_ALIAS ?? null,
     telegram: telegramFor(c.env),
@@ -131,9 +141,11 @@ app.post('/admin/run-followup', async (c) => {
   });
   return c.json(report);
 });
+  return app;
+}
 
 export default {
-  fetch: app.fetch,
+  fetch: buildApp((c) => fromD1(c.env.DB)).fetch,
 
   /**
    * Cron Trigger. Configured in wrangler.toml:

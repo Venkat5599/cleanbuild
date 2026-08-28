@@ -184,9 +184,9 @@ export function nullTracer(): Tracer {
 }
 
 export function tracerFromEnv(env: {
-  OTEL_EXPORTER_OTLP_ENDPOINT?: string;
-  OTEL_EXPORTER_OTLP_HEADERS?: string;
-  ENVIRONMENT?: string;
+  OTEL_EXPORTER_OTLP_ENDPOINT?: string | undefined;
+  OTEL_EXPORTER_OTLP_HEADERS?: string | undefined;
+  ENVIRONMENT?: string | undefined;
 }): Tracer | null {
   if (!env.OTEL_EXPORTER_OTLP_ENDPOINT) return null;
   const headers: Record<string, string> = {};

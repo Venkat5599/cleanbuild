@@ -104,7 +104,15 @@ Two scripts, two jobs:
   test on its own database (the B1 spec in PRD §10): mature without human,
   posterior mutates, materiality cleared, briefing composed, a new brief
   proposed, and a deliberately contradictory draft blocked. 7/7 checks;
-  with `--deliver` it sends a real briefing to the Minds agent.
+  with `--deliver` it sends a real briefing to the Minds agent (or the
+  Telegram fallback; verified live).
+
+Script order matters: verification is defined on the **fresh-seeded,
+pre-pool** posterior — `migrate → seed → verify → pool → briefs → snapshot`
+is the canonical sequence. After pooling, the stored posteriors are the
+shipped state under a shrunk prior, and the planted-ordering gate is not
+re-applied to them (shrinkage legitimately moves recovered magnitudes; the
+gate is the corruption check for the unpooled pipeline).
 
 ## 8. Honest numbers
 
