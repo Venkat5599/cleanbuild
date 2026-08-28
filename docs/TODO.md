@@ -116,4 +116,4 @@ Status legend: ✅ verified · 🟡 code done, live check needs a credential · 
 |---|---|---|---|
 | T-002 | Minds cognition credits = 0 (Wake "will go quiet") | User | Top up at build.hellominds.ai or claim the jam's one-per-team boost — Telegram fallback is verified live in the meantime |
 | T-005 | YouTube API key | User | Optional — connector is env-gated; demo does not need it |
-| T-702b | Cloudflare deploy (Worker + D1 + pages.dev) | User | `wrangler login` in repo root; then migrate + seed + deploy (runbook in README) |
+| T-702b | Cloudflare deploy (Worker + D1 + pages.dev) | User (no longer needed) | ✅ Resolved via VPS: API + dashboard + crontab live on 187.127.137.136 (:8787 / :8790); Cloudflare path remains available but optional |
