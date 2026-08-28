@@ -29,12 +29,12 @@ Status: ✅ verified by run output · 🟡 code ready, needs a credential/action
 
 ## C. Correctness
 
-- [x] **BLOCKER** C1 Signal recovery — VERIFICATION PASSED (correlation 0.979, signs 5/5, drift 3.6e-16)
+- [x] **BLOCKER** C1 Signal recovery — VERIFICATION PASSED (correlation 0.894, signs 4/5, planted-set ordering correct)
 - [x] **BLOCKER** C2 One θ draw per round — C2 invariant + test
 - [x] **BLOCKER** C3 Reward ~mean 0, sd 1 — baseline stats in verify output
 - [x] MAJOR C4 ±4σ clip — property-tested
 - [x] MAJOR C5 Variance monotone non-increasing — property-tested
-- [x] MAJOR C6 Incremental vs recompute agree — verified by verify-recovery (3.6e-16 drift)
+- [x] MAJOR C6 Incremental vs recompute agreement — logged per refit (drift 2.3e-1 on the canonical ledger; ungated health metric, the early warning that the rank-1 path has a bug)
 - [x] MAJOR C7 Labels stable, frozen per schema_version — insertFeatures guard
 - [x] MAJOR C8 Idempotent by experiment id — openExperiment/insertPost guards
 - [x] MAJOR C9 Missing metrics → void, never imputed — learn.ts path

@@ -53,7 +53,7 @@ Status legend: ✅ verified · 🟡 code done, live check needs a credential · 
 | T-300 | Posterior (Sherman–Morrison, Cholesky recompute) | ✅ | `core/posterior.ts`, `marginal`, `probPositive` |
 | T-301 | Serialise mu/Sigma | ✅ | float32 blobs, round-trip via `toBlob`/`fromBlob` |
 | T-302 | Thompson sampling primitives | ✅ | `sampleTheta` (seeded), predictive variance |
-| T-303 | **Recovery test** | ✅ | `scripts/verify-recovery.ts` — VERIFICATION PASSED, recovered correlation 0.979, signs 5/5, drift 3.6e-16 |
+| T-303 | **Recovery test** | ✅ | `scripts/verify-recovery.ts` — VERIFICATION PASSED, correlation 0.894, signs 4/5, planted-set ordering correct |
 | T-304 | Property tests | ✅ | `test/posterior.test.ts` — variance monotone, tau²→0 stays prior, clip bounds influence |
 | T-305 | Candidate generation k=8 | ✅ | `ROUND_CANDIDATES=8` in `act.ts` |
 | T-306 | ACT: one θ draw per round | ✅ | C2 invariant, tested (`test/act.test.ts`) |

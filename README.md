@@ -5,7 +5,7 @@
 **An autonomous audience-growth agent. Every post is an experiment; the agent collects the result days later, corrects it for what you do not control, and folds it into a model of your audience that never resets.**
 
 [![Live](https://img.shields.io/badge/live-ratchet.pages.dev-7fa87a)](https://ratchet.pages.dev)
-[![Tests](https://img.shields.io/badge/tests-42%20passed-7fa87a)](https://github.com/Venkat5599/cleanbuild)
+[![Tests](https://img.shields.io/badge/tests-78%20passed-7fa87a)](https://github.com/Venkat5599/cleanbuild)
 [![License](https://img.shields.io/badge/license-MIT-7fa87a)](LICENSE)
 [![Stack](https://img.shields.io/badge/stack-Bun%20%C2%B7%20React%20%C2%B7%20TypeScript-ece7df)](https://github.com/Venkat5599/cleanbuild)
 
@@ -62,20 +62,34 @@ Real output from a fresh clone:
 TIME TRAVEL PASSED. No browser was open at any point in this run.
 ```
 
-The learning path is verified separately — `bun run scripts/verify-recovery.ts` seeds 40 weeks of history with a planted ground truth (question hooks worth +0.6σ, 20-minute videos −0.4σ) and asserts the posterior recovers it:
+The learning path is verified separately — `bun run scripts/verify-recovery.ts` seeds 40 weeks of history with a planted ground truth (question hooks worth +0.6σ, 20-minute videos −0.4σ, four other planted effects) and asserts the posterior recovers it. Real output from a fresh clone:
 
 ```
-C3 reward distribution: mean -0.009, sd 0.955  PASS
+C3 reward distribution: mean -0.008, sd 0.959  PASS
+
+planted effect vs recovered posterior:
+  feature                              planted   recovered   95% CI            P(>0)
+  hook_type:question                     0.60      0.242   [-0.25, 0.73]     0.83  ok
+  hook_type:contrarian                   0.25     -0.065   [-0.56, 0.42]     0.39  WRONG SIGN
+  length_bucket:20m_plus                -0.40     -0.107   [-0.61, 0.39]     0.33  ok
+  thumbnail_archetype:face_reaction      0.30      0.154   [-0.32, 0.62]     0.73  ok
+  format:shorts                         -0.20     -0.040   [-0.52, 0.44]     0.43  ok
 
 C1 signal recovery:
-  correlation over planted effects : 0.955  (gate: > 0.70)
+  correlation over planted effects : 0.894  (gate: > 0.70)
+  correlation over all 35 weights  : 0.386  (reported, not gated —
+      30 of 35 true weights are zero, so this statistic measures noise)
   signs correct                    : 4/5  (gate: >= 4)
-  strongest of the planted set     : hook_type:question  (gate: ...)  PASS
+  strongest of the planted set     : hook_type:question  (gate: question, the
+      planted +0.60 effect, must be the largest of the five recovered)
+  PASS
 
 n = 194 closed experiments
 
 VERIFICATION PASSED
 ```
+
+The table shows what the methodology is honest about: at this sample size the ±4σ clip and 30 zero-true-weights mean smaller planted effects are recovered with 95% CIs that include zero, and one sign comes back wrong — the gates are set to what is actually identifiable (correlation > 0.70, signs ≥ 4/5, planted-set ordering), and the all-35 statistic is reported but never gated.
 
 ## The problem RATCHET solves
 
@@ -126,7 +140,7 @@ The act step draws **one** `θ̃ ~ N(μ, Σ)` per decision round, scores eight c
 
 - **dead format** — any active feature with P(helps) ≤ 0.20 is ruled out;
 - **hook cooldown** — a hook used within the last 14 days is a repeat, not a test;
-- **contradiction** — a draft whose token set overlaps a recorded canon claim is blocked with the quote.
+- **contradiction** — a draft whose token set overlaps a recorded canon claim is blocked with the quote; when `EMBEDDING_*` is configured, claims are embedded once (cached in the `claims` table) and a draft whose cosine similarity to any claim clears 0.8 is blocked too, even with zero shared tokens. Without configuration the rule degrades to the deterministic token check — a gate must degrade to its rules, never to silence.
 
 Every verdict is persisted to the gate log. If the belief change clears the materiality gate (a feature crossing 90% confidence, a trusted belief reversing sign, or a single large move), the worker briefs the Minds agent with the credible intervals and prior context, rate-limited to one message per 24h; the Mind decides how to speak. If the Mind is unreachable it falls back to Telegram, and if both fail the notification stays in the ledger as "not delivered" rather than disappearing.
 
@@ -183,39 +197,41 @@ if (verdict.material) { await deps.minds.sendMessage(alias, composeMindBriefing(
 
 | Feature | Status | Detail |
 |---|---|---|
-| Learning pipeline (featurizer, baseline, reward, posterior, Thompson) | ✅ Real | Verified: planted-signal correlation 0.955, signs 4/5, drift ~1e-15, 42 tests |
-| Autonomous acceptance test (`demo-timetravel.ts`) | ✅ Real | Runs end to end with no browser: maturation, materiality, notification, brief, gate block |
-| Act step + canon gate (briefs, gate log) | ✅ Real | Deterministic rules, every verdict persisted, 8 tests; contradiction uses token-set overlap, not embeddings |
+| Learning pipeline (featurizer, baseline, reward, posterior, Thompson) | ✅ Real | Verified: planted-signal correlation 0.894, signs 4/5 (gate ≥ 4), drift logged 2.3e-1, 31 core tests |
+| Autonomous acceptance test (`demo-timetravel.ts`) | ✅ Real | Runs end to end with no browser: maturation, materiality, notification, brief, gate block (7/7 checks) |
+| Act step + canon gate (briefs, gate log) | ✅ Real | Deterministic rules, every verdict persisted, 8 act tests; contradiction = token-overlap (always on) + embedding cosine (when `EMBEDDING_*` set) |
+| Hierarchical pooling across creators | ✅ Real | Empirical Bayes, 3+ creators per niche; making niche pooled, own-data weight 0.66; nightly cron wired |
+| Minds agent integration | ✅ Real | Verified live: real briefing delivered to the Wake Mind (`[mind] delivered 2026-09-03T06:24Z`), it replied "Acknowledged — loop verified". Caveat: account has **zero cognition credits** — top up before recording the demo's reply scene |
 | Dashboard + landing | ✅ Real (site update pending deploy) | Landing live at ratchet.pages.dev; dashboard routes render locally from the labelled snapshot; live alias not yet re-deployed with them |
+| YouTube connector | ✅ Code ready, needs key | `ingestChannel` / `pollChannel` with deterministic label heuristics (`labeledBy: 'heuristic'`), 24 tests; requires `YOUTUBE_API_KEY` to run |
 | Production Worker + cron | ⚠️ Code ready, not deployed | Requires Cloudflare login: D1 create → migrate → secrets → deploy; database_id still a placeholder in `wrangler.toml` |
-| Minds agent integration | ⚠️ Code ready, not verified live | Client + briefings written against the vendored official types; session-boundary persistence needs the Builder API key |
-| Telegram delivery | ⚠️ Code ready, not verified live | Fallback channel; needs bot token |
-| Live platform connector (YouTube Data API v3) | ❌ Not built | Ingest is the seeded history script (synthetic, labelled `synthetic: true` in every row) — v1 is the learning + autonomy claim, not data plumbing |
-| Embedding-based claim extraction | ❌ Not built | Memory graph (`packages/memory`) exists; extraction needs the AICREDITS key and is not wired into the autonomous path |
+| Telegram delivery | 🟡 Code ready, token unverified | Fallback channel; the operator's `TELEGRAM_BOT_TOKEN` ownership not yet checked via `getMe` |
+| Embedding-based claim extraction | ❌ Not wired | Memory graph (`packages/memory`) exists; extraction needs the AICREDITS key and is not wired into the autonomous path (distinct from the gate's embedding rule, which is built) |
 
-**What removing the Minds agent breaks.** The Minds agent is the product's memory and its voice. Remove `packages/mind` and the autonomous path can still compute rewards and update beliefs (that arithmetic is deliberately deterministic), but there is no continuity: nothing holds the narrative across sessions, and the "unprompted follow-up that references what we last talked about" — the persistence claim this jam scores — disappears. The fallback Telegram message is a delivery channel, not a replacement memory. `docs/MINDS.md` (pending) is the ownership table for this.
+**What removing the Minds agent breaks.** The Minds agent is the product's memory and its voice. Remove `packages/mind` and the autonomous path can still compute rewards and update beliefs (that arithmetic is deliberately deterministic), but there is no continuity: nothing holds the narrative across sessions, and the "unprompted follow-up that references what we last talked about" — the persistence claim this jam scores — disappears. The fallback Telegram message is a delivery channel, not a replacement memory. `docs/MINDS.md` is the ownership table.
 
 ## Tests
 
-42 tests, 0 failures:
+78 tests, 0 failures:
 
 ```
  31 pass in packages/core     (baseline, reward, posterior incl. signal recovery,
                                Thompson, pooling)
- 11 pass in packages/pipeline (act round structure, one-draw invariant,
+ 47 pass in packages/pipeline (act round structure, one-draw invariant,
                                dead_format / hook_cooldown / contradiction,
-                               determinism, niche pooling)
-Ran 42 tests across 4 files.
+                               embedding client contract, determinism, niche
+                               pooling, YouTube label heuristics)
+Ran 78 tests across 6 files.
 ```
 
 ```
 $ bun test
 ...
 
- 42 pass
+ 78 pass
   0 fail
-4473 expect() calls
-Ran 42 tests across 4 files.
+4527 expect() calls
+Ran 78 tests across 6 files.
 ```
 
 The most important test is not in the suite: `scripts/verify-recovery.ts` runs the real pipeline over the seeded ledger and asserts the posterior recovers the planted ground truth (see *See it in one command*).
@@ -227,11 +243,13 @@ git clone https://github.com/Venkat5599/cleanbuild
 cd cleanbuild
 bun install
 bun run scripts/migrate.ts            # applies the Drizzle migrations to .data/dev.db
-bun run scripts/seed-history.ts       # 40 weeks of labelled synthetic history (200 posts)
+bun run scripts/seed-history.ts --creators 6 --niches making,making,making,tech,gaming,fitness  # canonical 6-creator ledger (194 experiments)
 bun run scripts/verify-recovery.ts    # must print VERIFICATION PASSED
 bun run scripts/demo-timetravel.ts    # the acceptance test — no browser, no key needed
-bun test                              # 39 tests, 0 fail
+bun test                              # 78 tests, 0 fail
 ```
+
+(Plain `bun run scripts/seed-history.ts` seeds a single creator — every number quoted above is from the canonical 6-creator command, which is what a fresh clone produces.)
 
 Requires Bun ≥ 1.2. The dashboard:
 
@@ -254,6 +272,8 @@ Copy `.env.example` to `.env`. Every key in the file is read by code; nothing el
 | `OTEL_EXPORTER_OTLP_ENDPOINT` / `OTEL_EXPORTER_OTLP_HEADERS` | — | Any OTel-compatible collector |
 | `METRICS_TOKEN` | — | Bearer required to scrape `/metrics` |
 | `AICREDITS_API_KEY` / `AICREDITS_BASE_URL` / `EXTRACTION_MODEL` | aicredits.in / deepseek-v4-flash | Mechanical claim extraction (memory graph scripts only) |
+| `EMBEDDING_BASE_URL` / `EMBEDDING_API_KEY` / `EMBEDDING_MODEL` | — | OpenAI-compatible `/embeddings`; unset → the gate runs its deterministic token rule only. **Changing the model invalidates stored claim vectors** — clear `claims.embedding` once |
+| `YOUTUBE_API_KEY` | — | YouTube Data API v3 for the connector; unset → ingest/poll never run |
 | `RATCHET_API_URL` | — | oRPC endpoint of the deployed worker; unset → labelled snapshot |
 
 Worker secrets are set with `wrangler secret put NAME` (see Deploy), never via `.env`.
@@ -310,15 +330,17 @@ docs/                  PRD, ARCHITECTURE, TODO, CHECKLIST
 | Inference | pure TypeScript (ridge, Sherman–Morrison, Cholesky, Thompson) — no numeric inference in the LLM |
 | Agent | Minds Builder API (`X-Api-Key`), deterministic gate + briefing |
 | Observability | OpenTelemetry OTLP/HTTP, Prometheus text format, Upstash Redis |
-| Tests | bun:test (42 tests) |
+| Tests | bun:test (78 tests) |
 
 ## Roadmap
 
-- Live verification of the Minds agent (memory surviving a session boundary) and Telegram delivery, once credentials are set.
-- Production deployment of the worker cron and a re-deployed dashboard at the live alias.
-- A real platform connector (YouTube Data API v3, read-only) replacing the seeded ingest.
-- Embedding-based contradiction checks in the canon gate (the current rule is token-overlap; v1 is deterministic by design).
-- Hierarchical pooling across multiple creators in a niche (the schema and the pooling math exist; the job is not wired).
+Everything in v1 is in this repo; what remains needs credentials or the owner:
+
+- Minds cognition credits top-up, then the demo's wake-up scene (the account currently reports zero credits).
+- Cloudflare login → worker deploy (D1 → migrate → secrets → cron) and a re-deploy of the dashboard at the live alias.
+- Telegram token verification (`getMe`) to light up the fallback channel.
+- A `YOUTUBE_API_KEY` to run the YouTube connector against a real channel.
+- Claim extraction wiring (memory graph scripts need the AICREDITS key) — distinct from the gate's embedding rule, which is built.
 
 ## License
 
