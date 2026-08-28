@@ -247,9 +247,9 @@ export interface GateInput {
    * gate rule blocks drafts whose semantic similarity to a canon claim
    * clears EMBEDDING_BLOCK_COSINE. When unset, rule 4 does not run.
    */
-  embedCfg?: EmbedConfig;
+  embedCfg?: EmbedConfig | undefined;
   /** Injectable fetch for the embedding rule (unit tests only). */
-  embedFetch?: typeof fetch;
+  embedFetch?: typeof fetch | undefined;
 }
 
 /**
@@ -415,9 +415,9 @@ export interface GenerateOptions {
   /** Override the generated headline (used to construct a contradiction). */
   headlineOverride?: string;
   /** Enables the embedding contradiction rule for this round. */
-  embedCfg?: EmbedConfig;
+  embedCfg?: EmbedConfig | undefined;
   /** Injectable fetch for the embedding rule (unit tests only). */
-  embedFetch?: typeof fetch;
+  embedFetch?: typeof fetch | undefined;
 }
 
 /**
