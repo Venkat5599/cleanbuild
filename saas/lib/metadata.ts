@@ -3,23 +3,23 @@ import type { Metadata } from "next";
 export const siteConfig = {
   name: "RATCHET",
   description:
-    "A modern, accessible landing page template built with Next.js, Tailwind CSS, and TypeScript.",
-  url: "https://example.com",
-  ogImage: "/og-image.png",
-  creator: "@yourhandle",
+    "An autonomous audience-growth agent: every post is an experiment, outcomes are matured and confound-corrected, and the next brief is drawn from a Bayesian posterior and gated against the creator's canon.",
+  url: "http://187.127.137.136:8790",
+  ogImage: "/dashboard-real.png",
+  creator: "@Venkat5599",
   authors: [
     {
       name: "Venkat5599",
-      url: "https://example.com",
+      url: "https://github.com/Venkat5599/cleanbuild",
     },
   ],
   keywords: [
-    "landing page",
-    "template",
-    "Next.js",
-    "React",
-    "Tailwind CSS",
-    "TypeScript",
+    "audience growth",
+    "Bayesian",
+    "Thompson sampling",
+    "creator analytics",
+    "experiments",
+    "RATCHET",
   ],
 } as const;
 
