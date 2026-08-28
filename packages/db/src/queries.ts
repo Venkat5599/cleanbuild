@@ -303,6 +303,16 @@ export async function openExperiment(
   return row!.id;
 }
 
+/** All experiments for a creator, newest first. */
+export async function listExperiments(db: Db, creatorId: number, limit = 20) {
+  return db
+    .select()
+    .from(experiments)
+    .where(eq(experiments.creatorId, creatorId))
+    .orderBy(desc(experiments.openedAt))
+    .limit(limit);
+}
+
 /** Experiments whose next checkpoint has come due as of `now`. */
 export async function dueExperiments(db: Db, now: Date, limit = 200) {
   return db

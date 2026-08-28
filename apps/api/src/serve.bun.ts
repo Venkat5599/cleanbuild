@@ -24,6 +24,7 @@ const env: Env = {
   // The DB binding is unused by buildApp — the handle comes from the closure.
   DB: null as unknown as D1Database,
   ENVIRONMENT: process.env.ENVIRONMENT ?? 'production',
+  SANDBOX_DB_PATH: process.env.SANDBOX_DB_PATH ?? '.data/sandbox.db',
   ALLOWED_ORIGINS: process.env.ALLOWED_ORIGINS ?? '',
   MINDS_BUILDER_API_KEY: process.env.MINDS_BUILDER_API_KEY,
   MINDS_ALIAS: process.env.MINDS_ALIAS,

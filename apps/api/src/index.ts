@@ -29,7 +29,9 @@ import {
   type AnalyticsEngineDataset,
 } from '@ratchet/observability';
 import { runFollowUp } from './followup.js';
+import { Sandbox } from './sandbox.js';
 import { router } from './router.js';
+import type { FeatureLabels } from '@ratchet/core';
 
 export interface Env {
   DB: D1Database;
@@ -40,6 +42,8 @@ export interface Env {
   /** Comma-separated origins allowed to call the API. */
   ALLOWED_ORIGINS?: string | undefined;
   ENVIRONMENT?: string | undefined;
+  /** Scratch database path for the interactive sandbox (VPS deploys only). */
+  SANDBOX_DB_PATH?: string | undefined;
   /** Upstash Redis over HTTP. Workers cannot hold TCP Redis connections. */
   UPSTASH_REDIS_REST_URL?: string | undefined;
   UPSTASH_REDIS_REST_TOKEN?: string | undefined;
@@ -141,6 +145,55 @@ app.post('/admin/run-followup', async (c) => {
   });
   return c.json(report);
 });
+
+  // ------------------------------------------------------------------
+  // Interactive sandbox ("Try the loop"). Only enabled where a scratch
+  // database path is configured (the standalone Bun deployment); the
+  // Cloudflare worker does not expose it. The sandbox never touches the
+  // live ledger — it runs the same pipeline code on its own file.
+  // ------------------------------------------------------------------
+  const sandboxes = new Map<string, Sandbox>();
+  const sandboxOf = (c: Context<{ Bindings: Env }>): Sandbox | null => {
+    const path = c.env.SANDBOX_DB_PATH;
+    if (!path) return null;
+    let s = sandboxes.get(path);
+    if (!s) {
+      s = new Sandbox(path, c.env);
+      sandboxes.set(path, s);
+    }
+    return s;
+  };
+  const LABEL_KEYS = ['hookType', 'lengthBucket', 'thumbnailArchetype', 'publishSlot', 'format', 'topicCluster'] as const;
+
+  app.get('/sandbox/state', async (c) => {
+    const s = sandboxOf(c);
+    if (!s) return c.json({ error: 'sandbox not enabled on this deployment' }, 501);
+    return c.json(await s.state());
+  });
+  app.post('/sandbox/publish', async (c) => {
+    const s = sandboxOf(c);
+    if (!s) return c.json({ error: 'sandbox not enabled on this deployment' }, 501);
+    const body = (await c.req.json().catch(() => null)) as Partial<Record<(typeof LABEL_KEYS)[number], unknown>> | null;
+    if (!body || typeof body !== 'object') return c.json({ error: 'expected a labels object' }, 400);
+    for (const k of LABEL_KEYS) {
+      if (body[k] === undefined) return c.json({ error: `missing label ${k}` }, 400);
+    }
+    try {
+      return c.json(await s.publish(body as unknown as FeatureLabels));
+    } catch (e) {
+      return c.json({ error: e instanceof Error ? e.message : String(e) }, 500);
+    }
+  });
+  app.post('/sandbox/advance', async (c) => {
+    const s = sandboxOf(c);
+    if (!s) return c.json({ error: 'sandbox not enabled on this deployment' }, 501);
+    return c.json(await s.advance());
+  });
+  app.post('/sandbox/reset', async (c) => {
+    const s = sandboxOf(c);
+    if (!s) return c.json({ error: 'sandbox not enabled on this deployment' }, 501);
+    return c.json(await s.reset());
+  });
   return app;
 }
 
