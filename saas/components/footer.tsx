@@ -22,12 +22,12 @@ export function Footer(): ReactNode {
                   </a>
                 </li>
                 <li>
-                  <a href="/posterior" className="text-sm text-neutral-900 hover:text-neutral-900/70 transition-colors">
+                  <a href="/dashboard/posterior" className="text-sm text-neutral-900 hover:text-neutral-900/70 transition-colors">
                     The posterior
                   </a>
                 </li>
                 <li>
-                  <a href="/gate" className="text-sm text-neutral-900 hover:text-neutral-900/70 transition-colors">
+                  <a href="/dashboard/gate" className="text-sm text-neutral-900 hover:text-neutral-900/70 transition-colors">
                     Canon gate audit
                   </a>
                 </li>
