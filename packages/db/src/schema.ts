@@ -255,7 +255,9 @@ export const gateEvents = sqliteTable('gate_events', {
     .notNull()
     .references(() => briefs.id, { onDelete: 'cascade' }),
   createdAt: integer('created_at').notNull(),
-  rule: text('rule', { enum: ['contradiction', 'hook_cooldown', 'dead_format'] }).notNull(),
+  rule: text('rule', {
+    enum: ['contradiction', 'hook_cooldown', 'dead_format', 'embedding'],
+  }).notNull(),
   verdict: text('verdict', { enum: ['pass', 'block'] }).notNull(),
   explanation: text('explanation').notNull().default(''),
   overridden: integer('overridden', { mode: 'boolean' }).notNull().default(false),

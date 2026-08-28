@@ -203,6 +203,11 @@ export async function insertFeatures(
 
 // ------------------------------------------------------------------- metrics
 
+export async function getPost(db: Db, postId: number) {
+  const rows = await db.select().from(posts).where(eq(posts.id, postId)).limit(1);
+  return rows[0] ?? null;
+}
+
 export async function upsertMetrics(
   db: Db,
   postId: number,
@@ -705,12 +710,18 @@ export async function insertGateEvent(
   db: Db,
   input: {
     briefId: number;
-    rule: 'contradiction' | 'hook_cooldown' | 'dead_format';
+    rule: 'contradiction' | 'hook_cooldown' | 'dead_format' | 'embedding';
     verdict: 'pass' | 'block';
     explanation: string;
   },
 ) {
-  await db.insert(gateEvents).values({ ...input, createdAt: Date.now() });
+  await db.insert(gateEvents).values({
+    briefId: input.briefId,
+    rule: input.rule,
+    verdict: input.verdict,
+    explanation: input.explanation,
+    createdAt: Date.now(),
+  });
 }
 
 export async function listGateEvents(db: Db, limit = 50) {

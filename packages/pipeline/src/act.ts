@@ -46,9 +46,11 @@ import {
   listClaims,
   listPosts,
   setBriefStatus,
+  setClaimEmbedding,
   type Db,
 } from '@ratchet/db';
 import { systemClock, type Clock } from './learn.js';
+import { cosine, embedConfigured, embedTexts, type EmbedConfig } from './embed.js';
 
 /** A hook may not be proposed again inside this window. */
 export const HOOK_COOLDOWN_MS = 14 * 86_400_000;
@@ -60,8 +62,10 @@ export const ROUND_CANDIDATES = 8;
 export const MAX_GATE_ATTEMPTS = 3;
 /** Token-set overlap above this with a canon claim blocks the draft. */
 export const CONTRADICTION_OVERLAP = 0.5;
+/** Cosine similarity with a claim embedding above this blocks the draft. */
+export const EMBEDDING_BLOCK_COSINE = 0.8;
 
-export type GateRule = 'contradiction' | 'hook_cooldown' | 'dead_format';
+export type GateRule = 'contradiction' | 'hook_cooldown' | 'dead_format' | 'embedding';
 
 export interface GateEventView {
   rule: GateRule;
@@ -238,10 +242,18 @@ export interface GateInput {
   labels: FeatureLabels;
   posterior: Posterior;
   now: Date;
+  /**
+   * Optional OpenAI-compatible embeddings config. When set, an additional
+   * gate rule blocks drafts whose semantic similarity to a canon claim
+   * clears EMBEDDING_BLOCK_COSINE. When unset, rule 4 does not run.
+   */
+  embedCfg?: EmbedConfig;
+  /** Injectable fetch for the embedding rule (unit tests only). */
+  embedFetch?: typeof fetch;
 }
 
 /**
- * Run the three canon rules against a draft and record every verdict.
+ * Run the canon rules against a draft and record every verdict.
  *
  * Every rule writes a gate_event row with VERDICT 'pass' or 'block', so the
  * audit log shows the checks that ran, not only the ones that failed. A draft
@@ -309,6 +321,68 @@ export async function runGate(input: GateInput): Promise<GateEventView[]> {
     events.push({ rule: 'contradiction', verdict: 'pass', explanation: 'no conflict with the canon.' });
   }
 
+  // 4. embedding similarity (only when EMBEDDING_* is configured): a draft
+  //    can contradict the canon without sharing a single token. Claims are
+  //    embedded lazily and persisted to the claims table, so each claim is
+  //    embedded once per lifetime, not once per round. An infra failure must
+  //    not disable the rule silently — it is recorded in the audit row.
+  if (embedConfigured(input.embedCfg ?? {})) {
+    try {
+      const claims = await listClaims(db, creatorId);
+      if (claims.length > 0) {
+        const vectors = new Map<number, number[]>();
+        const needEmbed: Array<{ id: number; text: string }> = [];
+        for (const claim of claims) {
+          if (claim.embedding && claim.embedding.length > 0) {
+            vectors.set(claim.id, Array.from(claim.embedding));
+          } else {
+            needEmbed.push({ id: claim.id, text: claim.text });
+          }
+        }
+        if (needEmbed.length > 0) {
+          const fresh = await embedTexts(input.embedCfg!, needEmbed.map((c) => c.text), input.embedFetch);
+          for (let i = 0; i < needEmbed.length; i++) {
+            const emb = fresh[i] ?? [];
+            vectors.set(needEmbed[i]!.id, emb);
+            if (emb.length > 0) await setClaimEmbedding(db, needEmbed[i]!.id, new Float64Array(emb));
+          }
+        }
+        const headVec = (await embedTexts(input.embedCfg!, [headline], input.embedFetch))[0] ?? [];
+        let closestId: number | null = null;
+        let closestSim = -1;
+        for (const [id, vec] of vectors) {
+          const sim = cosine(headVec, vec);
+          if (sim > closestSim) {
+            closestId = id;
+            closestSim = sim;
+          }
+        }
+        if (closestId !== null && closestSim >= EMBEDDING_BLOCK_COSINE) {
+          const claim = claims.find((c) => c.id === closestId);
+          events.push({
+            rule: 'embedding',
+            verdict: 'block',
+            explanation: `draft is semantically close to the recorded stance "${claim?.text ?? `#${closestId}`}" (cosine ${closestSim.toFixed(2)} ≥ ${EMBEDDING_BLOCK_COSINE}) — surface it as a decision about that claim, not a new claim.`,
+          });
+        } else {
+          events.push({
+            rule: 'embedding',
+            verdict: 'pass',
+            explanation: `no embedded claim is within ${EMBEDDING_BLOCK_COSINE} cosine of the draft${closestId !== null ? ` (closest ${closestSim.toFixed(2)})` : ''}.`,
+          });
+        }
+      } else {
+        events.push({ rule: 'embedding', verdict: 'pass', explanation: 'canon has no recorded claims to compare.' });
+      }
+    } catch (err) {
+      events.push({
+        rule: 'embedding',
+        verdict: 'pass',
+        explanation: `embedding check unavailable (${err instanceof Error ? err.message : String(err)}); token-overlap rule still applies.`,
+      });
+    }
+  }
+
   // Persist every verdict. The audit log is the product here: the /gate page
   // renders these rows, and a blocked draft's explanation is its value.
   for (const e of events) {
@@ -340,6 +414,10 @@ export interface GenerateOptions {
   labels?: FeatureLabels;
   /** Override the generated headline (used to construct a contradiction). */
   headlineOverride?: string;
+  /** Enables the embedding contradiction rule for this round. */
+  embedCfg?: EmbedConfig;
+  /** Injectable fetch for the embedding rule (unit tests only). */
+  embedFetch?: typeof fetch;
 }
 
 /**
@@ -410,6 +488,8 @@ export async function generateBrief(
       labels: probe.labels,
       posterior,
       now: clock.now(),
+      embedCfg: opts.embedCfg,
+      embedFetch: opts.embedFetch,
     });
     const blocked = gateEvents.some((e) => e.verdict === 'block');
     if (blocked) await setBriefStatus(db, briefId, 'blocked');

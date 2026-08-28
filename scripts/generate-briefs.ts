@@ -36,12 +36,23 @@ if (creators.length === 0) {
 }
 const creator = creators[0]!;
 
+// Optional embedding contradiction rule, active only when EMBEDDING_* is set.
+const embedCfg =
+  process.env.EMBEDDING_BASE_URL && process.env.EMBEDDING_API_KEY && process.env.EMBEDDING_MODEL
+    ? {
+        baseUrl: process.env.EMBEDDING_BASE_URL,
+        apiKey: process.env.EMBEDDING_API_KEY,
+        model: process.env.EMBEDDING_MODEL,
+      }
+    : undefined;
+if (embedCfg) log.info('embedding contradiction rule ENABLED (EMBEDDING_* set)');
+
 // Five genuine decision rounds, spaced 15 days apart so hooks leave their
 // cooldown window between rounds and each round is judged on its merits.
 for (let i = 0; i < 5; i++) {
   const at = new Date(Date.now() + i * 15 * 86_400_000);
   const clock = fixedClock(at);
-  const result = await generateBrief(db, creator.id, { clock, seed: i + 1 });
+  const result = await generateBrief(db, creator.id, { clock, seed: i + 1, embedCfg });
   log.info(
     {
       round: i + 1,
@@ -72,6 +83,7 @@ const bad = await generateBrief(db, creator.id, {
   seed: 99,
   labels: badLabels,
   headlineOverride: '20 minute videos are dead for good',
+  embedCfg,
 });
 log.info(
   { stance: bad.stance, headline: bad.headline },
