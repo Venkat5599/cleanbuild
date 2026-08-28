@@ -17,7 +17,7 @@ Status legend: ✅ verified · 🟡 code done, live check needs a credential · 
 | T-003 | Neon provision | ✂️ | Shipped on Cloudflare D1/SQLite instead (PRD §9 implementation note) |
 | T-004 | Monorepo bootstrap | ✅ | Bun + Turborepo, `apps/{api,web}` + `saas` + `packages/{core,db,memory,mind,observability,pipeline}` |
 | T-005 | Google Cloud / YouTube key | 🟡 | Connector built (`packages/pipeline/src/youtube.ts`, `scripts/import-youtube.ts`) and unit-tested; `YOUTUBE_API_KEY` not provisioned |
-| T-006 | Telegram bot token | 🟡 | `TELEGRAM_BOT_TOKEN` present in the operator environment; ownership not yet verified via `getMe` |
+| T-006 | Telegram bot token | ✅ | Bot @ratchet_alerts_bot created + verified via `getMe`; demo delivery live (`delivered: 'telegram'`, 2026-08-28) |
 | T-007 | Public git repo | ✅ | `github.com/Venkat5599/cleanbuild`, main branch, pushed |
 | T-008 | `.env.example` | ✅ | True grep-verified contract; dead vars dropped |
 
@@ -66,7 +66,7 @@ Status legend: ✅ verified · 🟡 code done, live check needs a credential · 
 |---|---|---|---|
 | T-400 | Maturation job, hourly | ✅ | `learn.ts` + nightly cron in `apps/api/src/index.ts` (cron.mature events) |
 | T-401 | Materiality gate + 1/24h notify | ✅ | Deterministic materiality (≥0.90 posterior change), rate-limited |
-| T-402 | Telegram dispatch | 🟡 | Dispatch path + `notify.ts`; channel `telegram` needs the operator's verified token |
+| T-402 | Telegram dispatch | ✅ | `sendTelegram` live-verified: demo run delivered via @ratchet_alerts_bot, `delivered: 'telegram'` |
 | T-403 | Nightly refit | ✅ | Baseline refit + full posterior recompute on cron |
 | T-404 | Canon gate embeddings | ✅ | `embed.ts` + lazy claim-embedding persistence; shape verified against a live OpenAI-compatible endpoint (`{model,input}`); integration-tested with an injected fetch (near-paraphrase blocked at 0.90, far passed 0.00) |
 | T-405 | Gate rules + audit | ✅ | dead_format / hook_cooldown / contradiction (token overlap) / embedding; every verdict persisted to `gate_events` |
@@ -114,7 +114,6 @@ Status legend: ✅ verified · 🟡 code done, live check needs a credential · 
 
 | ID | Blocker | Owner | Resolution |
 |---|---|---|---|
-| T-002 | Minds cognition credits = 0 (Wake "will go quiet") | User | Top up at build.hellominds.ai or claim the jam's one-per-team boost |
+| T-002 | Minds cognition credits = 0 (Wake "will go quiet") | User | Top up at build.hellominds.ai or claim the jam's one-per-team boost — Telegram fallback is verified live in the meantime |
 | T-005 | YouTube API key | User | Optional — connector is env-gated; demo does not need it |
-| T-006 | Telegram token ownership | User | Run `getMe` with the token; optional — Minds is the primary channel |
 | T-702b | Cloudflare deploy (Worker + D1 + pages.dev) | User | `wrangler login` in repo root; then migrate + seed + deploy (runbook in README) |

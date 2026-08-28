@@ -205,7 +205,7 @@ if (verdict.material) { await deps.minds.sendMessage(alias, composeMindBriefing(
 | Dashboard + landing | ✅ Real (site update pending deploy) | Landing live at ratchet.pages.dev; dashboard routes render locally from the labelled snapshot; live alias not yet re-deployed with them |
 | YouTube connector | ✅ Code ready, needs key | `ingestChannel` / `pollChannel` with deterministic label heuristics (`labeledBy: 'heuristic'`), 24 tests; requires `YOUTUBE_API_KEY` to run |
 | Production Worker + cron | ⚠️ Code ready, not deployed | Requires Cloudflare login: D1 create → migrate → secrets → deploy; database_id still a placeholder in `wrangler.toml` |
-| Telegram delivery | 🟡 Code ready, token unverified | Fallback channel; the operator's `TELEGRAM_BOT_TOKEN` ownership not yet checked via `getMe` |
+| Telegram delivery | ✅ Verified live | Fallback channel; demo run delivered for real (`delivered: 'telegram'`, TIME TRAVEL PASSED 7/7) via @ratchet_alerts_bot on 2026-08-28 |
 | Embedding-based claim extraction | ❌ Not wired | Memory graph (`packages/memory`) exists; extraction needs the AICREDITS key and is not wired into the autonomous path (distinct from the gate's embedding rule, which is built) |
 
 **What removing the Minds agent breaks.** The Minds agent is the product's memory and its voice. Remove `packages/mind` and the autonomous path can still compute rewards and update beliefs (that arithmetic is deliberately deterministic), but there is no continuity: nothing holds the narrative across sessions, and the "unprompted follow-up that references what we last talked about" — the persistence claim this jam scores — disappears. The fallback Telegram message is a delivery channel, not a replacement memory. `docs/MINDS.md` is the ownership table.
@@ -336,9 +336,8 @@ docs/                  PRD, ARCHITECTURE, TODO, CHECKLIST
 
 Everything in v1 is in this repo; what remains needs credentials or the owner:
 
-- Minds cognition credits top-up, then the demo's wake-up scene (the account currently reports zero credits).
+- Minds cognition credits top-up, then the demo's wake-up scene via Minds (the fallback Telegram channel is already verified live, so the scene works either way).
 - Cloudflare login → worker deploy (D1 → migrate → secrets → cron) and a re-deploy of the dashboard at the live alias.
-- Telegram token verification (`getMe`) to light up the fallback channel.
 - A `YOUTUBE_API_KEY` to run the YouTube connector against a real channel.
 - Claim extraction wiring (memory graph scripts need the AICREDITS key) — distinct from the gate's embedding rule, which is built.
 

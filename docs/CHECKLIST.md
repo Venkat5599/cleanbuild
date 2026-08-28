@@ -23,7 +23,7 @@ Status: ✅ verified by run output · 🟡 code ready, needs a credential/action
 - [x] **BLOCKER** B2 Post published → experiment opens automatically — verified
 - [x] **BLOCKER** B3 Clock advances → cron matures with zero human input — verified
 - [x] **BLOCKER** B4 Belief-diff written — verified
-- [x] **BLOCKER** B5 Unprompted follow-up arrives, references context — Minds delivery (channel `mind`); Telegram 🟡 token
+- [x] **BLOCKER** B5 Unprompted follow-up arrives, references context — Minds delivery verified; Telegram fallback delivered for real (`delivered: 'telegram'`)
 - [x] **BLOCKER** B6 Week-1 vs week-8 render and visibly differ — verified
 - [x] MAJOR B7 Canon Gate blocks a contradictory draft and explains why — verified (gate demo + act tests)
 
